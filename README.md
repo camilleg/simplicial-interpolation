@@ -13,7 +13,12 @@ This software implements simplicial interpolation as described in the article
 On Linux, run the interactive OpenGL demo by typing `make`.
 This also compiles and runs on OS X 10.3.9.
 
-To tweak, start at the bottom of [si.c++](./si.c++).
+Click and drag anywhere in the window.  The mouse pointer `q` (for "query") is interpreted as a weighted
+sum of nearby points (blue triangle).  The size of a point's gray disc shows its weight.  The center point `C` is special,
+used for unbounded simplices (triangles with one edge at infinity) when `q` lies outside the convex hull
+of the fixed points.
+
+To tweak the code, start at the bottom of [si.c++](./si.c++).
 For the OpenGL demo, call `evalInteractive()`;  alternatively,
 to exercise the interpolator on randomly generated data, call `evalAutomatic()`.
 
