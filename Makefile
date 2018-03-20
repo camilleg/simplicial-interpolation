@@ -1,4 +1,12 @@
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+CC      = clang++
+GL_LDFLAGS = -framework GLUT -framework OpenGL
+else
 CC	= g++
+GL_LDFLAGS = -lglut -lGLU -lGL
+endif
+
 CFLAGS	= -O3 -W -Wall
 #CFLAGS	= -O0 -g -W -Wall
 OBJS	= hull.o ch.o io.o rand.o pointops.o fg.o hullmain.o
@@ -34,7 +42,7 @@ rsites	: $(OBJS_RSITES)
 $(OBJS_SI): si.h
 
 si: $(OBJS_SI)
-	$(CC) -o $@ $^ -lglut -lGLU -lGL -lm
+	$(CC) -o $@ $^ $(GL_LDFLAGS) -lm
 
 clean	:
 	-rm -f $(OBJS) $(OBJS_RSITES) $(OBJS_SI) core a.out $(EXES)

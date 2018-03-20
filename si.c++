@@ -15,12 +15,15 @@
 #include "sammon.h"
 #include "edahiro.h"
 
-#include <GL/gl.h>
-#include <GL/glu.h>
+
 #ifdef __APPLE__
 // Mac OS X 10.3.9 patch by Hans-Christoph Steiner, 2006 Jan 31
-#include <glut.h>
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#include <GLUT/glut.h>
 #else
+#include <GL/gl.h>
+#include <GL/glu.h>
 #include <GL/glut.h>
 #endif
 
