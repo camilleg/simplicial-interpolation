@@ -1,0 +1,47 @@
+<html>
+<title>Open-Source Simplicial Interpolation</title>
+<body>
+<h1>Open-Source Simplicial Interpolation</h1>
+
+<img align=right src="screenshot.png">
+<p>
+
+This software library implements simplicial interpolation as described
+in the article
+"<a href="http://zx81.isl.uiuc.edu/camilleg/os02.pdf">Interpolated Mappings for Musical Instruments</a>,"
+<a href="http://doi.org/10.1017/S1355771802002029">Organised Sound 7(2):85&#8210;96</a>,
+&copy; Cambridge University Press.
+<p>
+
+It is distributed under the GNU Lesser General Public License.
+<p>
+
+
+<a href="simplicial_interpolation.tar.gz">Download</a> the C++ source code,
+and uncompress it.<br>
+"make" builds and runs an interactive OpenGL Linux demo
+(screenshot shown).<br>
+It also compiles and runs on OS X 10.3.9.
+<br>
+Update, March 2009: In the test case, replaced "tail +2" with sed.  Now runs on Ubuntu Hardy Heron.
+<p>
+
+To tweak, start at the bottom of si.c++.  Call evalInteractive() for
+the OpenGL demo;  alternatively, call evalAutomatic() to exercise the
+interpolator on randomly generated data.  Constants d and e defined
+at the top of si.h determine the dimensions of the domain and range spaces.
+<p>
+
+Contact:
+  <br>Camille Goudeseune
+  <br>Illinois Simulator Laboratory
+  <br>2100 S Goodwin Ave
+  <br>Urbana IL 61801 USA
+  <br><a href="mailto:cog@illinois.edu">cog@illinois.edu</a>
+<p>
+
+Copyright 2009 Camille Goudeseune,
+except for Ken Clarkson's included
+"<a href="http://netlib.sandia.gov/voronoi/">hull.shar</a>"
+code which is copyright 1995 AT+T.
+</body></html>
