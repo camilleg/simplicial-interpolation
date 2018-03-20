@@ -196,6 +196,8 @@ bool precomputeBary(const simplex& s, simplexHint& h, const vertex& centroid,
       if (fRaySimplex && i == d && ivertex != -1)
         printf("internal error: inconsistency #3: %d %d in precomputeBary.\n", i, d);
       schmoo[j] = ivertex;
+#else
+      (void)fRaySimplex;
 #endif
       if (j >= d)
         printf("internal error in precomputeBary!\n");

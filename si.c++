@@ -73,7 +73,8 @@ vertex* readVertices(const char* szFile, int& count)
   vertex* v = new vertex[count];
   for (int i=0; i<count; ++i)
     {
-    fgets(buf, sizeof(buf)-1, pf);
+    if (fgets(buf, sizeof(buf)-1, pf) == NULL)
+      fprintf(stderr, "Failed to read a line from '%s'.\n", szFile);
     char* pch = buf;
     char* pchNext;
     for (int j=0; j<d; ++j)
@@ -105,7 +106,8 @@ e_vertex* readEVertices(const char* szFile, int& count)
   e_vertex* v = new e_vertex[count];
   for (int i=0; i<count; ++i)
     {
-    fgets(buf, sizeof(buf)-1, pf);
+    if (fgets(buf, sizeof(buf)-1, pf) == NULL)
+      fprintf(stderr, "Failed to read a line from e-vertices file '%s'.\n", szFile);
     char* pch = buf;
     char* pchNext;
     for (int j=0; j<e; ++j)
@@ -145,7 +147,8 @@ simplex* readSimplices(const char* szFile, int& count, int& countAll)
   for (int i=0; i<countAll; ++i)
     {
     simplex& s = sRet[i1];
-    fgets(buf, sizeof(buf)-1, pf);
+    if (fgets(buf, sizeof(buf)-1, pf) == NULL)
+      fprintf(stderr, "Failed to read a line from simplices file '%s'.\n", szFile);
     char* pch = buf;
     char* pchNext;
     bool fRay = false;
@@ -170,7 +173,8 @@ simplex* readSimplices(const char* szFile, int& count, int& countAll)
   for (int i=0; i<countAll; ++i)
     {
     simplex& s = sRet[i1];
-    fgets(buf, sizeof(buf)-1, pf);
+    if (fgets(buf, sizeof(buf)-1, pf) == NULL)
+      fprintf(stderr, "Failed to read a ray-simplex line from file '%s'.\n", szFile);
     char* pch = buf;
     char* pchNext;
     int jRay = -1;
@@ -236,7 +240,8 @@ bool init()
 
   const int cPointBecomesThis = d==2 ? 30 : d+10;
   sprintf(buf, "./rsites %d %d > %s", cPointBecomesThis, e, szFilePi);
-  system(buf);
+  if (system(buf) < 0)
+    fprintf(stderr, "system command failed\n");
   pi = readEVertices(szFilePi, cPoint);
   // szFilePi is a sequence of lines.
   // Each line is the coords of an e-vertex.
@@ -250,7 +255,8 @@ bool init()
     {
   case q_i_Manual:
     sprintf(buf, "./rsites %d %d > %s", cPoint, d, szFileQi);
-    system(buf);
+    if (system(buf) < 0)
+      fprintf(stderr, "system command failed\n");
     qi = readVertices(szFileQi, cPoint);
     break;
   case q_i_SammonsMapping:
@@ -279,7 +285,8 @@ bool init()
 
   // Compute Delaunay triangulation.
   sprintf(buf, "cat %s | ./hull -d | sed '2,$!d' > %s", szFileQi, szFileSi);
-  system(buf);
+  if (system(buf) < 0)
+    fprintf(stderr, "system command failed\n");
   si = readSimplices(szFileSi, csi, csiAll);
 
   // printf("read %d true simplices, %d ray-simplices.\n", csi, csiAll-csi);
@@ -470,9 +477,10 @@ void evalAutomatic()
   const char* szFileTest = "/tmp/.test";
   const int ctest = 20; // 100000 for timing tests
   sprintf(buf, "./rsites %d %d > %s", ctest, d, szFileTest);
-  system(buf);
+  if (system(buf) < 0)
+    fprintf(stderr, "system command failed\n");
 
-  // compiled -O2 or -O3 for a 1GHz P-III,
+  // Compiled -O2 or -O3 for a 1GHz Pentium III,
   // this does one test in 310 usec or 3200 tests per second for e=42, d=7.
   // For d=3, 100 usec/test or 10000 tests/sec.
   // For d=2, 66 usec/test or 15000 tests/sec.

@@ -29,7 +29,7 @@ Coord mins[MAXDIM]
 	maxs[MAXDIM]
 	= {-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX};
 
-void panic(char *fmt, ...) {
+void panic(const char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
@@ -40,27 +40,22 @@ void panic(char *fmt, ...) {
 	exit(1);
 }
 
-/*
-FILE * popen(char*, char*);
-void pclose(FILE*);
-*/
-
 char tmpfilenam[L_tmpnam];
 
-FILE* efopen(char *file, char *mode) {
+FILE* efopen(const char *file, const char *mode) {
 	FILE* fp;
-	if (fp = fopen(file, mode)) return fp;
+	if ((fp = fopen(file, mode)) != NULL) return fp;
 	fprintf(DFILE, "couldn't open file %s mode %s\n",file,mode);
 	exit(1);
 	return NULL;
 }
 
-FILE* epopen(char *com, char *mode) {
+FILE* epopen(const char *com, const char *mode) {
 	FILE* fp;
-	if (fp = popen(com, mode)) return fp;
+	if ((fp = popen(com, mode)) != NULL) return fp;
 	fprintf(stderr, "couldn't open stream %s mode %s\n",com,mode);
 	exit(1);
-	return 0;
+	return NULL;
 }
 
 
@@ -230,7 +225,13 @@ void vlist_out(point *v, int vdim, FILE *Fin, int) {
 }
 
 void off_out(point *v, int vdim, FILE *Fin, int amble) {
-
+#ifndef disabled
+	// tmpnam() is insecure.
+	(void)v;
+	(void)vdim;
+	(void)Fin;
+	(void)amble;
+#else
 	static FILE *F, *G;
 	static FILE *OFFFILE;
 	static char offfilenam[L_tmpnam];
@@ -248,6 +249,8 @@ void off_out(point *v, int vdim, FILE *Fin, int amble) {
 		fprintf(OFFFILE,"\n");
 	} else if (amble==-1) {
 		OFFFILE = efopen(tmpnam(offfilenam), "w");
+		// todo: replace insecure efopen+tmpnam with a call to mkstemp,
+		// and change OFFFILE from FILE* to an int fd.
 	} else {
 		fclose(OFFFILE);
 
@@ -255,13 +258,15 @@ void off_out(point *v, int vdim, FILE *Fin, int amble) {
 	
 		sprintf(comst, "wc %s", tmpfilenam);
 		G = epopen(comst, "r");
-		fscanf(G, "%d", &i);
+		if (1 != fscanf(G, "%d", &i))
+		  panic("fscanf failure #1");
 		fprintf(F, " %d", i);
 		pclose(G);
 	
 		sprintf(comst, "wc %s", offfilenam);
 		G = epopen(comst, "r");
-		fscanf(G, "%d", &i);
+		if (1 != fscanf(G, "%d", &i))
+		  panic("fscanf failure #2");
 		fprintf(F, " %d", i);
 		pclose(G);
 	
@@ -277,7 +282,7 @@ void off_out(point *v, int vdim, FILE *Fin, int amble) {
 		while (fgets(buf, sizeof(buf), G)) fprintf(F, "%s", buf);
 		fclose(G);
 	}
-
+#endif
 }
 
 

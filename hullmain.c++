@@ -154,7 +154,7 @@ site get_next_site(void) {
 }
 
 
-void errline(char *s) {fprintf(stderr, s); fprintf(stderr,"\n"); return;}
+void errline(const char *s) {fprintf(stderr, "%s\n", s); }
 void tell_options(void) {
 
 	errline("options:");
@@ -165,7 +165,11 @@ void tell_options(void) {
 	errline( "-i<name> read input from <name>;");
 	errline( "-X<name> chatter to <name>;");
 	errline( "-f<fmt> main output in <fmt>:");
+#ifdef disabled
 	errline("	ps->postscript, mp->metapost, cpr->cpr format, off->OFF format, vn->vertex numbers(default)");
+#else
+	errline("	ps->postscript, mp->metapost, cpr->cpr format, vn->vertex numbers(default)");
+#endif
 	errline( "-A alpha shape, find suitable alpha");
 	errline( "-aa<alpha> alpha shape, alpha=<alpha>;");
 	errline( "-af<fmt> output alpha shape in <fmt>;");
@@ -184,16 +188,13 @@ void echo_command_line(FILE *F, int argc, char **argv) {
 		fprintf(F,"\n");
 }
 
-char *output_forms[] = {"vn", "ps", "mp", "cpr", "off"};
+const char *output_forms[] = {"vn", "ps", "mp", "cpr" /*, "off"*/};
 
-out_func *out_funcs[] = {&vlist_out, &ps_out, &mp_out, &cpr_out, &off_out};
+out_func *out_funcs[] = {&vlist_out, &ps_out, &mp_out, &cpr_out /*, &off_out*/};
 
 
 int set_out_func(char *s) {
-
-	int i;
-
-	for (i=0;i< sizeof(out_funcs)/(sizeof (out_func*)); i++)
+	for (size_t i=0;i< sizeof(out_funcs)/(sizeof (out_func*)); i++)
 		if (strcmp(s,output_forms[i])==0) return i;
 	tell_options();
 	return 0;
@@ -309,6 +310,9 @@ int main(int argc, char **argv) {
 	} else fprintf(DFILE, "no main output\n");
 
 	TFILE = efopen(tmpnam(tmpfilenam), "w");
+	// todo: replace insecure efopen+tmpnam with a call to mkstemp,
+	// change TFILE from FILE* to an int fd,
+	// and change fprint TFILE to dprintf TFILE.
 
 	read_next_site(-1);
 /*	fprintf(DFILE,"dim=%d\n",dim);fflush(DFILE); */
@@ -319,7 +323,7 @@ int main(int argc, char **argv) {
 	if (shuffle) {
 		fprintf(DFILE, "reading sites...");
 		for (num_sites=0; read_next_site(num_sites); num_sites++);
-		fprintf(DFILE,"done; num_sites=%d\n", num_sites);fflush(DFILE);
+		fprintf(DFILE,"done; num_sites=%ld\n", num_sites);fflush(DFILE);
 		fprintf(DFILE,"shuffling...");
 		init_rand(seed);
 		make_shuffle();

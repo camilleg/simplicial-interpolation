@@ -108,12 +108,11 @@ Tree * splay (site i, Tree *t)
 /* size fields are maintained */
 {
     Tree N, *l, *r, *y;
-    int comp, root_size, l_size, r_size;
+    int comp, l_size, r_size;
     
     if (!t) return t;
     N.left = N.right = NULL;
     l = r = &N;
-    root_size = node_size(t);
     l_size = r_size = 0;
  
     for (;;) {
@@ -408,11 +407,9 @@ int p_fg_x_depth;
 void p_fg_x(Tree*t, int depth, int) {
 
 	static int fa[MAXDIM];
-	static point fp[MAXDIM];
 	int i;
 
 	fa[depth] = site_num(t->key);
-	fp[depth] = t->key;
 
 	if (depth==p_fg_x_depth) for (i=0;i<=depth;i++)
 			fprintf(FG_OUT, "%d%s", fa[i], (i==depth) ? "\n" : " ");

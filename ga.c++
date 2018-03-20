@@ -84,8 +84,8 @@ void Breed(int c1, int c2, int p1, int p2)
   while (cbLeft > 0)
     {
     lMask = random();
-    *plc1++ = *plp1   & lMask | *plp2   & ~lMask;
-    *plc2++ = *plp2++ & lMask | *plp1++ & ~lMask;
+    *plc1++ = (*plp1   & lMask) | (*plp2   & ~lMask);
+    *plc2++ = (*plp2++ & lMask) | (*plp1++ & ~lMask);
     cbLeft -= sizeof(long);
     }
 

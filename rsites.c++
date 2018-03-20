@@ -19,7 +19,8 @@ int main(int argc, char *argv[])
 	sscanf(argv[1], "%d", &nsites);
 	sscanf(argv[2], "%d", &d);
 	int fd = open("/dev/urandom", O_RDONLY);
-	read(fd, X, sizeof(X));
+	if (sizeof(X) != read(fd, X, sizeof(X)))
+	  fprintf(stderr, "rsites warning: failed to read from /dev/urandom.\n");
 	close(fd);
 	while(nsites>0){
 		for (i=0;i<d;i++) printf("%6.0f ", floor(1e6*erand48(X)));

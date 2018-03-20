@@ -28,7 +28,7 @@ extern char tmpfilenam[L_tmpnam];
 
 extern short check_overshoot_f;
 
-FILE* efopen(char *, char *);
+FILE* efopen(const char *, const char *);
 
 
 
@@ -203,7 +203,7 @@ void buildhull(simplex *);
 
 /* from io.c */
 
-void panic(char *fmt, ...);
+void panic(const char *fmt, ...);
 
 typedef void print_neighbor_f(FILE*, neighbor*);
 extern print_neighbor_f

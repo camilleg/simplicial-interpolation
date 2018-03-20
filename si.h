@@ -49,7 +49,7 @@ class vertex
   double x[d];
   double& operator[](int i) { return x[i]; }
   double  operator[](int i) const { return x[i]; }
-  void dump(char* sz = "v: ") const
+  void dump(const char* sz = "v: ") const
     { printf("%s", sz); for (int i=0; i<d; i++) printf("%g ", x[i]); printf("\n"); }
   };
 class e_vertex
@@ -58,7 +58,7 @@ class e_vertex
   double x[e];
   double& operator[](int i) { return x[i]; }
   double  operator[](int i) const { return x[i]; }
-  void dump(char* sz = "v: ") const
+  void dump(const char* sz = "v: ") const
     { printf("%s", sz); for (int i=0; i<e; i++) printf("%g ", x[i]); printf("\n"); }
   };
 
@@ -72,9 +72,9 @@ class simplex
   int x[d+1];
   int& operator[](int i) { return x[i]; }
   int  operator[](int i) const { return x[i]; }
-  void dump(char* sz = "s:") const
+  void dump(const char* sz = "s:") const
     { printf("%s\n", sz); for (int i=0; i<d+1; i++) qi[x[i]].dump("\t"); }
-  void dumpi(char* sz = "s:") const
+  void dumpi(const char* sz = "s:") const
     { printf("%s: ", sz); for (int i=0; i<d+1; i++) printf("%d ", x[i]); printf("\n"); }
   };
 
@@ -86,7 +86,7 @@ class simplexHint
   vertex facetnormal[d+1];
   const vertex* facetvertex[d+1];
   double facetvolume[d+1];
-  void dump(char* sz = "hint:") const
+  void dump(const char* sz = "hint:") const
     { printf("%s\n", sz);
       for (int i=0; i<d+1; i++) facetnormal[i].dump("\tnormal: ");
       for (int i=0; i<d+1; i++) facetvertex[i]->dump("\tvertex: ");

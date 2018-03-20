@@ -208,7 +208,8 @@ double sc(basis_s *v,simplex *s, int k, int j) {
 double lower_terms(basis_s* v) {
 
 	point vp = v->vecs;
-	int i,j,h,hh=0;
+	int i,j;
+	bool h;
 	int facs[6] = {2,3,5,7,11,13};
 	double out = 1;
 
@@ -217,26 +218,25 @@ DEBTR(0)
 
 	for (j=0;j<6;j++) do {
 		for (i=0; i<2*rdim && facs[j]*floor(vp[i]/facs[j])==vp[i];i++);
-		if (h = (i==2*rdim)) {
-			hh=1;
+		h = i==2*rdim;
+		if (h) {
 			out *= facs[j];
 			for (i=0;i<2*rdim; i++) vp[i]/=facs[j];
 		}
 	} while (h);
-/*	if (hh) {DEBTR(-10)  print_basis(DFILE, v);} */
 	return out;
 }
 
 double lower_terms_point(point vp) {
 
-	int i,j,h,hh=0;
+	int i,j,h;
 	int facs[6] = {2,3,5,7,11,13};
 	double out = 1;
 
 	for (j=0;j<6;j++) do {
 		for (i=0; i<2*rdim && facs[j]*floor(vp[i]/facs[j])==vp[i];i++);
-		if (h = (i==2*rdim)) {
-			hh=1;
+		h = i==2*rdim;
+		if (h) {
 			out *= facs[j];
 			for (i=0;i<2*rdim; i++) vp[i]/=facs[j];
 		}
