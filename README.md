@@ -12,8 +12,8 @@ This software implements simplicial interpolation as described in the article
 
 ***Building***
 
-On Linux, run the interactive OpenGL demo by typing `make`.
-This also compiles and runs on OS X 10.3.9.
+On almost any Linux, or Mac OS X 10.3‒10.13,
+run the interactive OpenGL demo by typing `make`.
 
 ***Running***
 
@@ -48,4 +48,4 @@ cog@illinois.edu
 This was first published in 2002 at http://zx81.isl.uiuc.edu/interpolation/, and revised slightly in 2009.
 
 Copyright 2018 Camille Goudeseune,
-except for included code from Ken Clarkson's [hull.shar](http://netlib.sandia.gov/voronoi/), which is copyright 1995 AT+T.
+except for included code from Ken Clarkson's [hull.shar](http://netlib.sandia.gov/voronoi/), which is copyright 1995 AT&T.
