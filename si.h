@@ -5,8 +5,7 @@
 // Extending a pointwise map from R^d to R^e, to a continuous map
 // via simplicial interpolation.
 
-#ifndef _SI_H_
-#define _SI_H_
+#pragma once
 
 const int d = 2;
 const int e = 8;
@@ -67,5 +66,3 @@ class simplexHint
 
 inline double sq(double _)
   { return _*_; }
-
-#endif

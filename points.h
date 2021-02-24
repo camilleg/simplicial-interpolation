@@ -1,10 +1,5 @@
-
-#ifndef PNTSH
-#define PNTSH 1
-
+#pragma once
 
 typedef double Coord;
 typedef Coord* point;
-extern int	pdim;	/* point dimension */
-
-#endif
+extern int pdim; /* point dimension */

@@ -12,9 +12,7 @@
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  */
 
-#ifndef HDR
-#define HDR 1
-
+#pragma once
 #include "points.h"
 #include "stormacs.h"
 
@@ -30,8 +28,6 @@ extern short check_overshoot_f;
 
 FILE* efopen(const char *, const char *);
 
-
-
 extern FILE *DFILE;
 
 #define DEBS(qq)  {if (DEBUG>qq) {
@@ -46,18 +42,13 @@ extern FILE *DFILE;
 		if (messcount==10) DEB(lev, consider yourself warned) \
 	}							\
 
-
 #define SBCHECK(s) /*								\
 {double Sb_check=0;								\
 int i;										\
 	for (i=1;i<cdim;i++) if (s->neigh[i].basis)				\
-					Sb_check+=s->neigh[i].basis->sqb;		\
-	if ((float)(Sb_check - s->Sb) !=0.0)							\
-	{DEBTR DEB(bad Sb); DEBEXP(s->Sb) DEBEXP(Sb_check);print_simplex(s); exit(1);}}*/\
-
-
-
-
+				Sb_check+=s->neigh[i].basis->sqb;		\
+	if ((float)(Sb_check - s->Sb) !=0.0)					\
+	{DEBTR DEB(bad Sb); DEBEXP(s->Sb) DEBEXP(Sb_check);print_simplex(s); exit(1);}}*/
 
 typedef point site;
 
@@ -71,8 +62,6 @@ extern int
 	site_size, /* size of malloc needed for a site */
 	point_size;  /* size of malloc needed for a point */
 
-
-
 typedef struct basis_s {
 	struct basis_s *next; /* free list */
 	int ref_count;	/* storage management */
@@ -81,7 +70,6 @@ typedef struct basis_s {
 	Coord vecs[1]; /* the actual vectors, extended by malloc'ing bigger */
 } basis_s;
 STORAGE_GLOBALS(basis_s)
-
 
 typedef struct neighbor {
 	site vert; /* vertex of simplex */
@@ -100,8 +88,6 @@ typedef struct simplex {
 } simplex;
 STORAGE_GLOBALS(simplex)
 
-
-
 typedef struct fg_node fg;
 typedef struct tree_node Tree;
 struct tree_node {
@@ -111,9 +97,7 @@ struct tree_node {
     fg *fgs;
     Tree *next; /* freelist */
 };
-
 STORAGE_GLOBALS(Tree)
-
 
 typedef struct fg_node {
 	Tree *facets;
@@ -122,19 +106,15 @@ typedef struct fg_node {
 	short mark;
 	int ref_count;
 } fg_node;
-	
 STORAGE_GLOBALS(fg)
-
 
 typedef simplex* visit_func(simplex *, void *);
 typedef int test_func(simplex *, int, void *);
 typedef void out_func(point *, int, FILE*, int);
 
-
 /* from driver, e.g., hullmain.c */
 
 typedef site gsitef(void);
-
 extern gsitef *get_site;	
 
 typedef long site_n(site);
@@ -148,25 +128,16 @@ typedef short zerovolf(simplex *);
 
 extern double Huge;
 
-
 /* from segt.c or ch.c */
 
 simplex *build_convex_hull(gsitef*, site_n*, short, short);
-
 void free_hull_storage(void);
-
 int sees(site, simplex *);
-
 void get_normal(simplex *s);
-
 int out_of_flat(simplex*, site);
-
 void set_ch_root(simplex*);
-
 void print_site(site, FILE*);
-
 void print_normal(simplex*);
-
 visit_func check_marks;
 
 double find_alpha(simplex*);
@@ -174,7 +145,6 @@ test_func alph_test;
 simplex* visit_outside_ashape(simplex*, visit_func);
 
 void get_basis_sede(simplex *);
-
 
 	/* for debugging */
 int check_perps(simplex*);
@@ -184,9 +154,7 @@ void find_volumes(fg*, FILE*);
 #define MAXPOINTS 100
 extern short mi[MAXPOINTS], mo[MAXPOINTS];
 
-
 /* from hull.c */
-
 
 simplex *visit_triang_gen(simplex *, visit_func, test_func);
 simplex *visit_triang(simplex *, visit_func);
@@ -200,15 +168,12 @@ simplex *new_simp(void);
 
 void buildhull(simplex *);
 
-
 /* from io.c */
 
 void panic(const char *fmt, ...);
 
 typedef void print_neighbor_f(FILE*, neighbor*);
-extern print_neighbor_f
-	print_neighbor_full,
-	print_neighbor_snum;
+extern print_neighbor_f print_neighbor_full, print_neighbor_snum;
 
 void check_triang(simplex*);
 
@@ -226,7 +191,6 @@ simplex *print_simplex(simplex*, void*);
 
 void print_triang(simplex*, FILE*, print_neighbor_f*);
 
-
 out_func vlist_out, ps_out, cpr_out, mp_out, off_out;
 	/* functions for different formats */
 
@@ -235,32 +199,22 @@ visit_func facets_print, afacets_print, ridges_print;
 
 void print_edge_dat(fg *, FILE *);
 
-
 /* from pointops.c */
 
 void print_point(FILE*, int, point);
 void print_point_int(FILE*, int, point);
 Coord maxdist(int,point p1, point p2);
 
-
-
 /* from rand.c */
 
 extern double double_rand(void);
 extern void init_rand(long seed);
 
-
 /* from fg.c, for face graphs */
 
 fg *build_fg(simplex*);
-
 void print_fg(fg*, FILE *);
-
 void print_fg_alt(fg*, FILE *, int);
-
 void print_hist_fg(simplex *, fg*, FILE *);
 
 /*  void arena_check(void); */	/* from hobby's debugging malloc  */
-
-
-#endif
