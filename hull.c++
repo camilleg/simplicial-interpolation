@@ -22,7 +22,6 @@
 
 #include "hull.h"
 
-
 site p;
 long pnum;
 
@@ -33,8 +32,8 @@ int	rdim,	/* region dimension: (max) number of sites specifying region */
 
 STORAGE(simplex)
 
-#define push(x) *(st+tms++) = x;
-#define pop(x)  x = *(st + --tms);
+#define push(x) (*(st+tms++) = x)
+#define pop(x) (x = *(st + --tms))
 
 simplex *visit_triang_gen(simplex *s, visit_func *visit, test_func *test) {
 /* 
@@ -56,7 +55,6 @@ simplex *visit_triang_gen(simplex *s, visit_func *visit, test_func *test) {
 	if (!st) assert(st=(simplex**)malloc((ss+MAXDIM+1)*sizeof(simplex*)));
 	if (s) push(s);
 	while (tms) {
-
 		if (tms>ss) {DEBEXP(-1,tms);
 			assert(st=(simplex**)realloc(st,
 				((ss+=ss)+MAXDIM+1)*sizeof(simplex*)));
@@ -64,7 +62,8 @@ simplex *visit_triang_gen(simplex *s, visit_func *visit, test_func *test) {
 		pop(t);
 		if (!t || t->visit == vnum) continue;
 		t->visit = vnum;
-		if (v=(*visit)(t,0)) {return v;}
+		v=(*visit)(t,0);
+		if (v) return v;
 		for (i=-1,sn = t->neigh-1;i<cdim;i++,sn++)
 			if ((sn->simp->visit != vnum) && sn->simp && test(t,i,0))
 				push(sn->simp);
@@ -72,23 +71,22 @@ simplex *visit_triang_gen(simplex *s, visit_func *visit, test_func *test) {
 	return NULL;
 }
 
-int truet(simplex *, int, void *) {return 1;}
+int truet(simplex *, int, void *)
+{return 1;}
 
-simplex *visit_triang(simplex *root, visit_func *visit)
 /* visit the whole triangulation */
-	{return visit_triang_gen(root, visit, truet);}
+simplex *visit_triang(simplex *root, visit_func *visit)
+{return visit_triang_gen(root, visit, truet);}
 
+int hullt(simplex *, int i, void *)
+{return i>-1;}
 
-int hullt(simplex *, int i, void *) {return i>-1;}
-
-simplex *facet_test(simplex *s, void *) {return (!s->peak.vert) ? s : NULL;}
+simplex *facet_test(simplex *s, void *)
+{return (!s->peak.vert) ? s : NULL;}
 
 simplex *visit_hull(simplex *root, visit_func *visit)
 /* visit all simplices with facets of the current hull */
-	{return visit_triang_gen(visit_triang(root, &facet_test),
-			visit, hullt);}
-
-
+{return visit_triang_gen(visit_triang(root, &facet_test), visit, hullt);}
 
 #define lookup(a,b,what,whatt)						\
 {									\
@@ -107,8 +105,7 @@ simplex *visit_hull(simplex *root, visit_func *visit)
 		exit(1);						\
 		return 0;						\
 	}								\
-}									\
-
+}
 
 neighbor *op_simp(simplex *a, simplex *b) {lookup(a,b,simp,simplex)}
 	/* the neighbor entry of a containing b */
@@ -116,10 +113,8 @@ neighbor *op_simp(simplex *a, simplex *b) {lookup(a,b,simp,simplex)}
 neighbor *op_vert(simplex *a, site b) {lookup(a,b,vert,site)}
 	/* the neighbor entry of a containing b */
 
-
 void connect(simplex *s) {
 /* make neighbor connections between newly created simplices incident to p */
-
 	site xf,xb,xfi;
 	simplex *sb, *sf, *seen;
 	int i;
@@ -151,25 +146,19 @@ void connect(simplex *s) {
 
 		sn->simp = sf;
 		op_vert(sf,xf)->simp = s;
-
 		connect(sf);
 	}
-
 }
 
-
-				
 simplex *make_facets(simplex *seen) {
 /*
  * visit simplices s with sees(p,s), and make a facet for every neighbor
  * of s not seen by p
  */
-
 	simplex *n;
 	static simplex *ns;
 	neighbor *bn;
 	int i;
-
 
 	if (!seen) return NULL;
 	DEBS(-1) assert(sees(p,seen) && !seen->peak.vert); EDEBS
@@ -195,14 +184,11 @@ simplex *make_facets(simplex *seen) {
 	return ns;
 }
 
-
-
 simplex *extend_simplices(simplex *s) {
 /*
  * p lies outside flat containing previous sites;
  * make p a vertex of every current simplex, and create some new simplices
  */
-
 	int	i,
 		ocdim=cdim-1;
 	simplex *ns;
@@ -229,11 +215,9 @@ simplex *extend_simplices(simplex *s) {
 	return ns;
 }
 
-
 simplex *search(simplex *root) {
 /* return a simplex s that corresponds to a facet of the 
  * current hull, and sees(p, s) */
-
 	simplex *s;
 	static simplex **st;
 	static long ss = MAXDIM*8; // camilleg: *8 so fewer realloc's below, they tend to dump core
@@ -247,7 +231,7 @@ simplex *search(simplex *root) {
 	if (!sees(p,root))
 		for (i=0,sn=root->neigh;i<cdim;i++,sn++) push(sn->simp);
 	while (tms) {
-		if (tms>ss) 
+		if (tms>ss)
 			assert(st=(simplex**)realloc(st,
 				((ss+=ss)+MAXDIM+1)*sizeof(simplex*)));
 		pop(s);
@@ -260,24 +244,19 @@ simplex *search(simplex *root) {
 	return NULL;
 }
 
-
 point get_another_site(void) {
-
-	static int scount =0;
+	//static int scount = 0;
 	point pnext;
 
 	//if (!(++scount%1000)) {fprintf(DFILE,"site %d...", scount);}
-/*	check_triang(); */
+	//check_triang();
 	pnext = (*get_site)();
 	if (!pnext) return NULL;
 	pnum = site_num(pnext)+2;
 	return pnext;
 }
 
-
-
 void buildhull (simplex *root) {
-
 	while (cdim < rdim) {
 		p = get_another_site();
 		if (!p) return;
@@ -286,6 +265,6 @@ void buildhull (simplex *root) {
 		else
 			connect(make_facets(search(root)));
 	}
-	while (p = get_another_site())
+	while ((p = get_another_site()) != NULL)
 		connect(make_facets(search(root)));
 }

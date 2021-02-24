@@ -628,12 +628,9 @@ bool Edahiro_Init(const int cpt, const vertex* qi, const int csi, const simplex*
       for (ir=1; ir<=nr; ir++)
 	{
 	Region& r = rgregion[ir];
-	     if (r.i1 == jv  ) r.i1 = jv+1;
-	else if (r.i1 == jv+1) r.i1 = jv  ;
-	     if (r.i2 == jv  ) r.i2 = jv+1;
-	else if (r.i2 == jv+1) r.i2 = jv  ;
-	     if (r.i3 == jv  ) r.i3 = jv+1;
-	else if (r.i3 == jv+1) r.i3 = jv  ;
+	if (r.i1 == jv) { r.i1 = jv+1; } else if (r.i1 == jv+1) { r.i1 = jv; }
+	if (r.i2 == jv) { r.i2 = jv+1; } else if (r.i2 == jv+1) { r.i2 = jv; }
+	if (r.i3 == jv) { r.i3 = jv+1; } else if (r.i3 == jv+1) { r.i3 = jv; }
 	}
       }
   }
