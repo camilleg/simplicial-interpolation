@@ -15,36 +15,34 @@ ifeq ($(UNAME_S),Darwin)
 CFLAGS += -DGL_SILENCE_DEPRECATION # MacOS 11.2
 endif
 
-OBJS = hull.o ch.o io.o rand.o pointops.o fg.o hullmain.o
+OBJS_HULL = hull.o ch.o io.o rand.o pointops.o fg.o hullmain.o
 OBJS_RSITES = rsites.o
 OBJS_SI = si.o sammon.o ga.o gacli.o det.o bary.o edahiro.o
 
-HDRS = hull.h points.h pointsites.h stormacs.h
+HDRS_HULL = hull.h points.h pointsites.h stormacs.h
 HDRS_SI = si.h sammon.h ga.h gacli.h bary.h det.h util.h edahiro.h
 
-EXES    = hull rsites si
+EXES = hull rsites si
 
 all: $(EXES)
 	./si
 
-$(OBJS) : $(HDRS)
-$(OBJS_SI) : $(HDRS_SI)
+$(OBJS_HULL): $(HDRS_HULL)
+$(OBJS_SI): $(HDRS_SI)
 
 %.o: %.c++
 	$(CC) -c $(CFLAGS) $<
 
-hullmain.o: $(HDRS)
-
-hull: $(OBJS)
+hull: $(OBJS_HULL)
 	$(CC) -o $@ $^ -lm
 
 rsites: $(OBJS_RSITES)
 	$(CC) -o $@ $^ -lm
 
-$(OBJS_SI): si.h
-
 si: $(OBJS_SI)
 	$(CC) -o $@ $^ $(GL_LDFLAGS) -lm
 
 clean:
-	-rm -f $(OBJS) $(OBJS_RSITES) $(OBJS_SI) core a.out $(EXES)
+	-rm -f $(OBJS_HULL) $(OBJS_RSITES) $(OBJS_SI) $(EXES)
+
+.PHONY: all clean
