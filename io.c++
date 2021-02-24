@@ -1,6 +1,5 @@
 /* io.c : input-output */
 
-
 /*
  * Ken Clarkson wrote this.  Copyright (c) 1995 by AT&T..
  * Permission to use, copy, modify, and distribute this software for any
@@ -24,10 +23,8 @@
 #include "hull.h"
 
 double mult_up = 1.0;
-Coord mins[MAXDIM]
-	= {DBL_MAX,DBL_MAX,DBL_MAX,DBL_MAX,DBL_MAX,DBL_MAX,DBL_MAX,DBL_MAX},
-	maxs[MAXDIM]
-	= {-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX};
+Coord mins[MAXDIM] = {DBL_MAX,DBL_MAX,DBL_MAX,DBL_MAX,DBL_MAX,DBL_MAX,DBL_MAX,DBL_MAX},
+      maxs[MAXDIM] = {-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX};
 
 void panic(const char *fmt, ...) {
 	va_list args;
@@ -40,14 +37,13 @@ void panic(const char *fmt, ...) {
 	exit(1);
 }
 
-char tmpfilenam[L_tmpnam];
+char tmpfilenam[] = "/tmp/hullXXXXXX";
 
 FILE* efopen(const char *file, const char *mode) {
 	FILE* fp;
 	if ((fp = fopen(file, mode)) != NULL) return fp;
 	fprintf(DFILE, "couldn't open file %s mode %s\n",file,mode);
 	exit(1);
-	return NULL;
 }
 
 FILE* epopen(const char *com, const char *mode) {
@@ -55,13 +51,9 @@ FILE* epopen(const char *com, const char *mode) {
 	if ((fp = popen(com, mode)) != NULL) return fp;
 	fprintf(stderr, "couldn't open stream %s mode %s\n",com,mode);
 	exit(1);
-	return NULL;
 }
 
-
-
 void print_neighbor_snum(FILE* F, neighbor *n){
-
 	assert(site_num!=NULL);
 	if (n->vert)
 		fprintf(F, "%ld ", (*site_num)(n->vert));
@@ -113,11 +105,7 @@ simplex *print_facet(FILE *F, simplex *s, print_neighbor_f *pnfin) {
 	return NULL;
 }
 
-
-
-
 simplex *print_simplex_f(simplex *s, FILE *F, print_neighbor_f *pnfin){
-
 	static print_neighbor_f *pnf;
 
 	if (pnfin) {pnf=pnfin; if (!s) return NULL;}
@@ -137,9 +125,7 @@ simplex *print_simplex(simplex *s, void *Fin) {
 	if (Fin) {F=(FILE*)Fin; if (!s) return NULL;}
 
 	return print_simplex_f(s, F, 0);
-
 }
-
 
 void print_triang(simplex *root, FILE *F, print_neighbor_f *pnf) {
 	print_simplex(0,F);
@@ -149,10 +135,7 @@ void print_triang(simplex *root, FILE *F, print_neighbor_f *pnf) {
 
 void *p_peak_test(simplex *s) {return (s->peak.vert==p) ? (void*)s : (void*)NULL;}
 
-
-
 simplex *check_simplex(simplex *s, void *){
-
 	int i,j,k,l;
 	neighbor *sn, *snn, *sn2;
 	simplex *sns;
@@ -204,15 +187,9 @@ void check_triang(simplex *root){visit_triang(root, &check_simplex);}
 
 void check_new_triangs(simplex *s){visit_triang_gen(s, check_simplex, p_neight);}
 
-
-
-
-
 /* outfuncs: given a list of points, output in a given format */
 
-
 void vlist_out(point *v, int vdim, FILE *Fin, int) {
-
 	static FILE *F;
 	int j;
 
@@ -220,8 +197,6 @@ void vlist_out(point *v, int vdim, FILE *Fin, int) {
 
 	for (j=0;j<vdim;j++) fprintf(F, "%ld ", (site_num)(v[j]));
 	fprintf(F,"\n");
-
-	return;
 }
 
 void off_out(point *v, int vdim, FILE *Fin, int amble) {
@@ -277,21 +252,14 @@ void off_out(point *v, int vdim, FILE *Fin, int amble) {
 		fclose(G);
 	
 		G = efopen(offfilenam, "r");
-	
-	
 		while (fgets(buf, sizeof(buf), G)) fprintf(F, "%s", buf);
 		fclose(G);
 	}
 #endif
 }
 
-
-
 void mp_out(point *v, int vdim, FILE *Fin, int amble) {
-
-
 /* should fix scaling */
-
 	static int figno=1;
 	static FILE *F;
 
@@ -322,9 +290,7 @@ void mp_out(point *v, int vdim, FILE *Fin, int amble) {
 	}
 }
 
-
 void ps_out(point *v, int vdim, FILE *Fin, int amble) {
-
 	static FILE *F;
 	static double scaler;
 
@@ -375,7 +341,6 @@ void ps_out(point *v, int vdim, FILE *Fin, int amble) {
 }
 
 void cpr_out(point *v, int vdim, FILE *Fin, int) {
-
 	static FILE *F;
 	int i;
 
@@ -392,15 +357,9 @@ void cpr_out(point *v, int vdim, FILE *Fin, int) {
 	);
 }
 
-
 /* vist_funcs for different kinds of output: facets, alpha shapes, etc. */
 
-
-
-
-
 simplex *facets_print(simplex *s, void *p) {
-
 	static out_func *out_func_here;
 	point v[MAXDIM];
 	int j;
@@ -410,13 +369,10 @@ simplex *facets_print(simplex *s, void *p) {
 	for (j=0;j<cdim;j++) v[j] = s->neigh[j].vert;
 
 	out_func_here(v,cdim,0,0);
-
 	return NULL;
 }
 
-
 simplex *ridges_print(simplex *s, void *p) {
-
 	static out_func *out_func_here;
 	point v[MAXDIM];
 	int j,k,vnum;
@@ -434,10 +390,7 @@ simplex *ridges_print(simplex *s, void *p) {
 	return NULL;
 }
 
-
-
 simplex *afacets_print(simplex *s, void *p) {
-
 	static out_func *out_func_here;
 	point v[MAXDIM];
 	int j,k,vnum;

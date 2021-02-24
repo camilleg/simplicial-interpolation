@@ -22,7 +22,7 @@
 #define DEBUG 0
 #define CHECK_OVERSHOOT 1
 
-extern char tmpfilenam[L_tmpnam];
+extern char tmpfilenam[];
 
 extern short check_overshoot_f;
 

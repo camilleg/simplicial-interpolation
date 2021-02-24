@@ -7,6 +7,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <ctype.h>
+#include <cstdlib>
 
 /*
  * Ken Clarkson wrote this.  Copyright (c) 1995 by AT&T..
@@ -293,10 +294,9 @@ int main(int argc, char **argv) {
 		//fprintf(DFILE, "main output to %s\n", ofn ? ofile : "stdout");
 	} else fprintf(DFILE, "no main output\n");
 
-	TFILE = efopen(tmpnam(tmpfilenam), "w");
-	// todo: replace insecure efopen+tmpnam with a call to mkstemp,
-	// change TFILE from FILE* to an int fd,
-	// and change fprint TFILE to dprintf TFILE.
+	if (mkstemp(tmpfilenam) < 0)
+		panic("failed to make name for temporary file");
+	TFILE = efopen(tmpfilenam, "w");
 
 	read_next_site(-1);
 /*	fprintf(DFILE,"dim=%d\n",dim);fflush(DFILE); */
