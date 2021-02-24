@@ -15,7 +15,6 @@
 #include "sammon.h"
 #include "edahiro.h"
 
-
 #ifdef __APPLE__
 // Mac OS X 10.3.9 patch by Hans-Christoph Steiner, 2006 Jan 31
 #include <OpenGL/gl.h>
@@ -600,26 +599,27 @@ inline void XYFromMouse(double& x, double& y, int xM, int yM)
   y = (1. - double(yM) / double(ySize)) * (1e6 + 2*margin) - margin;
 }
 
+void mouse_hover(int x, int y)
+{
+  XYFromMouse(vQ[0], vQ[1], x, y);
+  e_vertex p;
+  eval(vQ, p);
+}
+
+#ifdef MUST_HOLD_DOWN_MOUSE_BUTTON
 void mouse(int button, int state, int x, int y)
 {
   if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
-    {
-    XYFromMouse(vQ[0], vQ[1], x, y);
-    e_vertex p;
-    eval(vQ, p);
-    }
+    mouse_hover(x, y);
 }
-
-void drag(int x, int y)
-{
-  mouse(GLUT_LEFT_BUTTON, GLUT_DOWN, x, y);
-}
+#endif
 
 void keyboard(unsigned char key, int /*x*/, int /*y*/)
 {
   switch (key)
     {
-  case 27: /* escape key */
+  case 'q':
+  case 27: /* escape */
     terminate();
     exit(0);
     }
@@ -652,8 +652,12 @@ void evalInteractive(int argc, char** argv)
   glutInitWindowSize(xSize,ySize);
   glutCreateWindow("Simplicial Interpolator");
   glutKeyboardFunc(keyboard);
+#ifdef MUST_HOLD_DOWN_MOUSE_BUTTON
   glutMouseFunc(mouse);
-  glutMotionFunc(drag);
+#else
+  glutPassiveMotionFunc(mouse_hover);
+#endif
+  glutMotionFunc(mouse_hover);
   glutReshapeFunc(reshape);
   glutDisplayFunc(display);
   glutIdleFunc(display);
