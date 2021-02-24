@@ -1,26 +1,26 @@
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
-CC      = clang++
+CC = clang++
 GL_LDFLAGS = -framework GLUT -framework OpenGL
 # For OS X 10.3.9:
-# CC	= g++
+# CC = g++
 # CFLAGS += -I/usr/X11R6/include -I/System/Library/Frameworks/GLUT.framework/Versions/A/Headers
 else
-CC	= g++
+CC = g++
 GL_LDFLAGS = -lglut -lGLU -lGL
 endif
 
-CFLAGS	= -O3 -W -Wall
-OBJS	= hull.o ch.o io.o rand.o pointops.o fg.o hullmain.o
+CFLAGS = -O3 -W -Wall
+OBJS = hull.o ch.o io.o rand.o pointops.o fg.o hullmain.o
 OBJS_RSITES = rsites.o
-OBJS_SI	= si.o sammon.o ga.o gacli.o det.o bary.o edahiro.o
+OBJS_SI = si.o sammon.o ga.o gacli.o det.o bary.o edahiro.o
 
-HDRS	= hull.h points.h pointsites.h stormacs.h
-HDRS_SI	= si.h sammon.h ga.h gacli.h bary.h det.h util.h edahiro.h
+HDRS = hull.h points.h pointsites.h stormacs.h
+HDRS_SI = si.h sammon.h ga.h gacli.h bary.h det.h util.h edahiro.h
 
 EXES    = hull rsites si
 
-all	: $(EXES)
+all: $(EXES)
 	./si
 
 $(OBJS) : $(HDRS)
@@ -29,12 +29,12 @@ $(OBJS_SI) : $(HDRS_SI)
 %.o: %.c++
 	$(CC) -c $(CFLAGS) $<
 
-hullmain.o	: $(HDRS)
+hullmain.o: $(HDRS)
 
-hull	: $(OBJS)
+hull: $(OBJS)
 	$(CC) -o $@ $^ -lm
 
-rsites	: $(OBJS_RSITES)
+rsites: $(OBJS_RSITES)
 	$(CC) -o $@ $^ -lm
 
 $(OBJS_SI): si.h
@@ -42,5 +42,5 @@ $(OBJS_SI): si.h
 si: $(OBJS_SI)
 	$(CC) -o $@ $^ $(GL_LDFLAGS) -lm
 
-clean	:
+clean:
 	-rm -f $(OBJS) $(OBJS_RSITES) $(OBJS_SI) core a.out $(EXES)
