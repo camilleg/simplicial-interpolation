@@ -11,6 +11,10 @@ GL_LDFLAGS = -lglut -lGLU -lGL
 endif
 
 CFLAGS = -O3 -W -Wall
+ifeq ($(UNAME_S),Darwin)
+CFLAGS += -DGL_SILENCE_DEPRECATION # MacOS 11.2
+endif
+
 OBJS = hull.o ch.o io.o rand.o pointops.o fg.o hullmain.o
 OBJS_RSITES = rsites.o
 OBJS_SI = si.o sammon.o ga.o gacli.o det.o bary.o edahiro.o
