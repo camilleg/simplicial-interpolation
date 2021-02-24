@@ -7,24 +7,24 @@ to then smoothly interpolate between the spaces.  For instance, this lets a game
 two joysticks (four dimensions) control dozens or hundreds of separate parameters.
 
 This software implements simplicial interpolation as described in the article
-[Interpolated Mappings for Musical Instruments](http://zx81.isl.uiuc.edu/camilleg/os02.pdf),
+[Interpolated Mappings for Musical Instruments](http://camille-g.com/os02.pdf),
 [Organised Sound 7(2):85‒96](http://doi.org/10.1017/S1355771802002029), © Cambridge University Press.
 
 ***Building***
 
-On almost any Linux, or Mac OS X 10.3‒10.13,
+On almost any Linux, or Mac OS X 10.3‒11.2,
 run the interactive OpenGL demo by typing `make`.
 
 ***Running***
 
-*Click and drag anywhere in the window.*
+*Wave the mouse over the window.  If you like, click and drag even beyond the window.*
 
 The mouse pointer `q` (for "query") is interpreted as a weighted
 sum of nearby points (blue triangle).  The size of a point's gray disc shows its weight.  The center point `C` is special,
 used for unbounded simplices (triangles with one edge at infinity) when `q` lies outside the convex hull
 of the fixed points.
 
-*Hit the escape key to exit.*
+*Hit q or the escape key to exit.*
 
 ***Customizing***
 
@@ -41,11 +41,11 @@ Camille Goudeseune
     
 [http://camille-g.com](http://camille-g.com)
     
-cog@illinois.edu
+camilleg@camille-g.com
 
 ***History***
 
-This was first published in 2002 at http://zx81.isl.uiuc.edu/interpolation/, and revised slightly in 2009.
+This was first published in 2002 at http://zx81.isl.uiuc.edu/interpolation/ (defunct), and revised slightly in 2009.
 
-Copyright 2018 Camille Goudeseune,
+Copyright 2021 Camille Goudeseune,
 except for included code from Ken Clarkson's [hull.shar](http://netlib.sandia.gov/voronoi/), which is copyright 1995 AT&T.
