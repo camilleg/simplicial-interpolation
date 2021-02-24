@@ -51,9 +51,7 @@ long site_numm(site p) {
 	return -3;
 }
 
-
 site new_site (site p, long j) {
-
 	assert(num_blocks+1<MAXBLOCKS);
 	if (0==(j%BLOCKSIZE)) {
 		assert(num_blocks < MAXBLOCKS);
@@ -63,7 +61,6 @@ site new_site (site p, long j) {
 }
 
 site read_next_site(long j){
-
 	int i=0, k=0;
 	static char buf[100], *s;
 
@@ -95,9 +92,6 @@ site read_next_site(long j){
 	return p;
 }
 
-
-
-
 /*
 site read_next_site(long j){
 
@@ -120,11 +114,9 @@ site read_next_site(long j){
 */
 
 site get_site_offline(long i) {
-
 	if (i>=num_sites) return NULL;
 	else return site_blocks[i/BLOCKSIZE]+(i%BLOCKSIZE)*dim;
 }
-
 
 long *shufmat;
 void make_shuffle(void){
@@ -153,10 +145,8 @@ site get_next_site(void) {
 	return (*get_site_n)((*shuf)(s_num++));
 }
 
-
 void errline(const char *s) {fprintf(stderr, "%s\n", s); }
 void tell_options(void) {
-
 	errline("options:");
 	errline( "-m mult  multiply by mult before rounding;");
 	errline( "-d compute delaunay triangulation;");
@@ -180,18 +170,16 @@ void tell_options(void) {
 	errline( "-oh incidence histograms");
 }
 
-
 void echo_command_line(FILE *F, int argc, char **argv) {
 	fprintf(F,"%%");
 	while (--argc>=0) 
 		fprintf(F, "%s%s", *argv++, (argc>0) ? " " : "");
-		fprintf(F,"\n");
+	fprintf(F,"\n");
 }
 
 const char *output_forms[] = {"vn", "ps", "mp", "cpr" /*, "off"*/};
 
 out_func *out_funcs[] = {&vlist_out, &ps_out, &mp_out, &cpr_out /*, &off_out*/};
-
 
 int set_out_func(char *s) {
 	for (size_t i=0;i< sizeof(out_funcs)/(sizeof (out_func*)); i++)
@@ -212,11 +200,7 @@ void make_output(simplex *root, simplex *(*visit_gen)(simplex*, visit_func* visi
 	fclose(F);
 }
 
-
-
 int main(int argc, char **argv) {
-
-
 	long	seed = 0;
 	short	shuffle = 0,
 		output = 1,
@@ -371,7 +355,6 @@ int main(int argc, char **argv) {
 		make_output(root, visit_outside_ashape, afacets_print, aof, T);
 	}
 
-
 	if (vol) {
 		char volnam[50];
 		sprintf(volnam, "%s-vol", ofilepre);
@@ -390,6 +373,5 @@ int main(int argc, char **argv) {
 	}
 
 	free_hull_storage();
-
 	exit(0);
 }

@@ -22,10 +22,8 @@ extern X *new_block_##X(int);		\
 extern void flush_##X##_blocks(void);	\
 void free_##X##_storage(void);		\
 
-
 #define INCP(X,p,k) ((X *) ( (char*)p + (k) * X##_size)) /* portability? */
 #define DECP(X,p,k) ((X *) ( (char*)p - (k) * X##_size)) /* portability? */
-
 
 #define STORAGE(X)						\
 								\
@@ -73,15 +71,12 @@ X* new_block_##X(int make_blocks)				\
 								\
 void free_##X##_storage(void) {new_block_##X(0);}		\
 
-
 #define NEWL(X,p)						\
 {								\
  	p = X##_list ? X##_list : new_block_##X(1);		\
 	assert(p);						\
  	X##_list = p->next;					\
 }								\
-
-
 
 #define NEWLRC(X,p)						\
 {								\
@@ -91,7 +86,6 @@ void free_##X##_storage(void) {new_block_##X(0);}		\
 	p->ref_count = 1;					\
 }								\
 
-
 #define FREEL(X,p)						\
 {								\
 	memset((p),0,X##_size);					\
@@ -99,12 +93,9 @@ void free_##X##_storage(void) {new_block_##X(0);}		\
 	X##_list = p;						\
 }								\
 
-
 #define dec_ref(X,v)	{if ((v) && --(v)->ref_count == 0) FREEL(X,(v));}
 #define inc_ref(X,v)	{if (v) v->ref_count++;}
 #define NULLIFY(X,v)	{dec_ref(X,v); v = NULL;}
-
-
 
 #define mod_refs(op,s)					\
 {							\
@@ -121,16 +112,11 @@ void free_##X##_storage(void) {new_block_##X(0);}		\
 	FREEL(simplex, s);			\
 }						\
 
-
 #define copy_simp(snew,s)			\
 {	NEWL(simplex,snew);			\
 	memcpy(snew,s,simplex_size);		\
 	mod_refs(inc,s);			\
 }						\
-
-
-
-
 
 #if 0
 STORAGE_GLOBALS(type)
