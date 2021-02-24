@@ -125,7 +125,7 @@ float b_err_min, b_err_min_sq;
 double logb(double); /* on SGI machines: returns floor of log base 2 */
 
 static short vd;
-static basis_s	tt_basis = {0,1,-1,0,0,0},
+static basis_s	tt_basis = {NULL, 1, -1, 0.0, 0.0, {0.0}},
 		*tt_basisp = &tt_basis,
 		*infinity_basis;
 
