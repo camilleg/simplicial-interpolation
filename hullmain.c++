@@ -38,7 +38,10 @@ static long num_sites;
 static short vd = 0;
 static int dim;
 
-FILE *INFILE, *OUTFILE, *DFILE, *TFILE;
+FILE *INFILE, *OUTFILE, *DFILE;
+#ifdef DUMP_HULL
+FILE *TFILE;
+#endif
 
 long site_numm(site p) {
 
@@ -72,7 +75,9 @@ site read_next_site(long j){
 		if (buf[k]) break;
 	}
 	if (!s) return 0;
+#ifdef DUMP_HULL
 	if (j!=0) fprintf(TFILE, "%s", buf+k);
+#endif
 	while (buf[k]) {
 		while (buf[k] && isspace(buf[k])) k++;
 		if (buf[k] && j!=-1) {
@@ -294,9 +299,11 @@ int main(int argc, char **argv) {
 		//fprintf(DFILE, "main output to %s\n", ofn ? ofile : "stdout");
 	} else fprintf(DFILE, "no main output\n");
 
+#ifdef DUMP_HULL
 	if (mkstemp(tmpfilenam) < 0)
 		panic("failed to make name for temporary file");
 	TFILE = efopen(tmpfilenam, "w");
+#endif
 
 	read_next_site(-1);
 /*	fprintf(DFILE,"dim=%d\n",dim);fflush(DFILE); */
@@ -324,7 +331,9 @@ int main(int argc, char **argv) {
 
 	root = build_convex_hull(get_next_site, site_numm, dim, vd);
 
+#ifdef DUMP_HULL
 	fclose(TFILE);
+#endif
 	//fprintf(DFILE, "done\n"); fflush(DFILE);
 
 	if (output) {
