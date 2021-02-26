@@ -201,7 +201,7 @@ void vlist_out(point *v, int vdim, FILE *Fin, int) {
 
 void off_out(point *v, int vdim, FILE *Fin, int amble) {
 #ifndef disabled
-	// tmpnam() is insecure.
+	// todo: replace insecure tmpnam with mkstemp, as was done in hullmain.c++.
 	(void)v;
 	(void)vdim;
 	(void)Fin;
@@ -224,8 +224,6 @@ void off_out(point *v, int vdim, FILE *Fin, int amble) {
 		fprintf(OFFFILE,"\n");
 	} else if (amble==-1) {
 		OFFFILE = efopen(tmpnam(offfilenam), "w");
-		// todo: replace insecure efopen+tmpnam with a call to mkstemp,
-		// and change OFFFILE from FILE* to an int fd.
 	} else {
 		fclose(OFFFILE);
 
