@@ -1,4 +1,4 @@
-**Simplicial Interpolation**
+## Simplicial Interpolation
 
 ![screenshot](./screenshot.png)
 
@@ -10,7 +10,7 @@ This software implements simplicial interpolation as described in the article
 [Interpolated Mappings for Musical Instruments](http://camille-g.com/os02.pdf),
 [Organised Sound 7(2):85‒96](http://doi.org/10.1017/S1355771802002029), © Cambridge University Press.
 
-***How to build***
+### How to build
 
 On almost any Linux, or macOS 10.3‒11.2,
 run the interactive OpenGL demo by typing `make`.
@@ -21,7 +21,7 @@ On Windows 10:
 - `make`
 - To run, also install an X server such as [VcXsrv](https://sourceforge.net/projects/vcxsrv/).
 
-***How to run***
+### How to run
 
 *Wave the mouse over the window.  If you like, click and drag even beyond the window.*
 
@@ -32,7 +32,7 @@ of the fixed points.
 
 *Hit q or the escape key to exit.*
 
-***How to customize***
+### How to customize
 
 Start at the bottom of [si.c++](./si.c++).
 For the OpenGL demo, call `evalInteractive()`;  alternatively,
@@ -41,17 +41,15 @@ to exercise the interpolator on randomly generated data, call `evalAutomatic()`.
 The dimensions of the input and output spaces are set
 by the constants `d` and `e` at the top of [si.h](./si.h).
 
-***Contact***
+### Contact
 
-Camille Goudeseune
-    
-[http://camille-g.com](http://camille-g.com)
-    
-camilleg@camille-g.com
+Camille Goudeseune  
+[http://camille-g.com](http://camille-g.com)  
+camilleg@camille-g.com  
 
-***History***
+### History
 
-This was first published in 2002 at http://zx81.isl.uiuc.edu/interpolation/ (defunct), and revised slightly in 2009.
+This was first published in 2002 at [http://zx81.isl.uiuc.edu/interpolation/](http://web.archive.org/web/20021003120921/http://zx81.isl.uiuc.edu/interpolation/) (defunct), and revised slightly in 2009.
 
 Copyright 2021 Camille Goudeseune,
 except for included code from Ken Clarkson's [hull.shar](http://www.netlib.org/voronoi/), which is copyright 1995 AT&T.
