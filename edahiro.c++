@@ -12,8 +12,9 @@
 // Edges are numbered 1 to ne.
 // Regions are numbered 1 to nr, and 0 for the unique unbounded region.
 
-#include <math.h>
-#include <stdio.h>
+#include <cmath>
+#include <cstdio>
+#include <limits>
 #include "edahiro.h"
 
 class Vertex
@@ -37,8 +38,9 @@ public:
   int pnext, mnext; // iedges's: ccw-neighbor edges incident to ihead, itail
   double angle;     // "slope" [0,2PI) of forward edge
   double negangle;  // "slope" [0,2PI) of backward edge
+  static constexpr auto NaN = std::numeric_limits<double>::signaling_NaN();
 
-  Edge(): ihead(-1), itail(-1), lface(-1), rface(-1) {}
+  Edge(): ihead(-1), itail(-1), lface(-1), rface(-1), pnext(-1), mnext(-1), angle(NaN), negangle(NaN) {}
   };
 
 class Region

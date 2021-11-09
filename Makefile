@@ -1,18 +1,18 @@
-UNAME_S := $(shell uname -s)
+UNAME_S := $(shell sh -c 'uname -s 2>/dev/null')
 ifeq ($(UNAME_S),Darwin)
-CC = clang++
-GL_LDFLAGS = -framework GLUT -framework OpenGL
-# For OS X 10.3.9:
-# CC = g++
-# CFLAGS += -I/usr/X11R6/include -I/System/Library/Frameworks/GLUT.framework/Versions/A/Headers
+  CC = clang++
+  GL_LDFLAGS = -framework GLUT -framework OpenGL
+  # For OS X 10.3.9:
+  # CC = g++
+  # CFLAGS += -I/usr/X11R6/include -I/System/Library/Frameworks/GLUT.framework/Versions/A/Headers
 else
-CC = g++
-GL_LDFLAGS = -lglut -lGLU -lGL
+  CC = g++
+  GL_LDFLAGS = -lglut -lGLU -lGL
 endif
 
-CFLAGS = -O3 -W -Wall
+CFLAGS := -std=c++17 -O3 -W -Wall -Werror -Weffc++
 ifeq ($(UNAME_S),Darwin)
-CFLAGS += -DGL_SILENCE_DEPRECATION # MacOS 11.2
+  CFLAGS += -DGL_SILENCE_DEPRECATION # MacOS 11.2
 endif
 
 OBJS_HULL = hull.o ch.o io.o rand.o pointops.o fg.o hullmain.o
