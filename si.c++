@@ -491,10 +491,10 @@ void display()
   const simplex& s = si[iFound];
 
   // Bounding simplex (i.e., triangle).
-  glColor3f(.05,.05,.4);
   glBegin(GL_TRIANGLES);
   if (fInside)
     {
+    glColor3f(.2,0,.07);
     for (j=0; j<=d; ++j)
       {
       const vertex& v = qi[s[j]];
@@ -503,6 +503,7 @@ void display()
     }
   else
     {
+    glColor3f(0,.15,0);
     glVertex2f(qC[0], qC[1]);
     vertex v = qi[s[0]];
     v[0] += 100. * (v[0] - qC[0]);
@@ -532,7 +533,7 @@ void display()
   if (fInside)
     glColor3f(1,0,.4);
   else
-    glColor3f(.5,0,.2);
+    glColor3f(.3,0,.12);
   for (i=0; i<csi; ++i)
     {
     const simplex& s = si[i];
@@ -547,7 +548,7 @@ void display()
 
   // Ray-simplices.
   if (fInside)
-    glColor3f(0,.5,0);
+    glColor3f(0,.35,0);
   else
     glColor3f(0,1,0);
   for (i=csi; i<csiAll; ++i)
