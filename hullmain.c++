@@ -347,7 +347,7 @@ int main(int argc, char **argv) {
 	}
 
 	if (ahull) {
-		char ahname[50];
+		char ahname[60];
 		out_func* aof = out_funcs[alpha_out_form];
 		if (alpha_out_form==0)
 			sprintf(ahname, "%s-alf", ofilepre);
@@ -365,7 +365,7 @@ int main(int argc, char **argv) {
 	}
 
 	if (vol) {
-		char volnam[50];
+		char volnam[60];
 		sprintf(volnam, "%s-vol", ofilepre);
 		fprintf(DFILE, "finding volumes; output to %s\n", volnam);
 		fflush(DFILE);
@@ -373,7 +373,7 @@ int main(int argc, char **argv) {
 	}
 
 	if (vd && hist) {
-		char hnam[50];
+		char hnam[60];
 		sprintf(hnam, "%s-hist", ofilepre);
 		fprintf(DFILE,"finding incidence histograms; output to %s\n", hnam);
 		fflush(DFILE);
