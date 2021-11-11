@@ -16,13 +16,12 @@ ifeq ($(UNAME_S),Darwin)
 endif
 
 OBJS_HULL = hull.o ch.o io.o rand.o pointops.o fg.o hullmain.o
-OBJS_RSITES = rsites.o
 OBJS_SI = si.o sammon.o ga.o gacli.o det.o bary.o edahiro.o
 
 HDRS_HULL = hull.h points.h pointsites.h stormacs.h
 HDRS_SI = si.h sammon.h ga.h gacli.h bary.h det.h util.h edahiro.h
 
-EXES = hull rsites si
+EXES = hull si
 
 all: $(EXES)
 	./si
@@ -36,13 +35,10 @@ $(OBJS_SI): $(HDRS_SI)
 hull: $(OBJS_HULL)
 	$(CC) -o $@ $^ -lm
 
-rsites: $(OBJS_RSITES)
-	$(CC) -o $@ $^ -lm
-
 si: $(OBJS_SI)
 	$(CC) -o $@ $^ $(GL_LDFLAGS) -lm
 
 clean:
-	-rm -f $(OBJS_HULL) $(OBJS_RSITES) $(OBJS_SI) $(EXES)
+	-rm -f $(OBJS_HULL) $(OBJS_SI) $(EXES)
 
 .PHONY: all clean

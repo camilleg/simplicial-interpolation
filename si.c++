@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+
 #include "si.h"
 #include "bary.h"
 #include "gacli.h"
@@ -28,7 +29,6 @@
 
 int cPoint = -1;
 const char* szFileQi = "/tmp/.x";
-const char* szFilePi = "/tmp/.y";
 const char* szFileSi = "/tmp/.simplicial_interpolation.txt";
 
 // Read d-vertices from szFile into an array.
@@ -52,39 +52,6 @@ vertex* readVertices(const char* szFile, int& count)
     char* pch = buf;
     char* pchNext;
     for (int j=0; j<d; ++j)
-      {
-      v[i][j] = strtod(pch, &pchNext);
-      if (pchNext == pch)
-        printf("Unexpected string \"%s\" while reading %dth float from %s\n",
-	  pch, j, szFile);
-      pch = pchNext;
-      }
-    }
-  fclose(pf);
-  return v;
-}
-
-// Read e-vertices from szFile into an array.
-// Caller is responsible for freeing memory.
-e_vertex* readEVertices(const char* szFile, int& count)
-{
-  // Count how many lines.
-  count = 0;
-  FILE* pf = fopen(szFile, "r");
-  if (!pf)
-    return NULL;
-  char buf[1000];
-  while (fgets(buf, sizeof(buf)-1, pf))
-    ++count;
-  rewind(pf);
-  e_vertex* v = new e_vertex[count];
-  for (int i=0; i<count; ++i)
-    {
-    if (fgets(buf, sizeof(buf)-1, pf) == NULL)
-      fprintf(stderr, "Failed to read a line from e-vertices file '%s'.\n", szFile);
-    char* pch = buf;
-    char* pchNext;
-    for (int j=0; j<e; ++j)
       {
       v[i][j] = strtod(pch, &pchNext);
       if (pchNext == pch)
@@ -201,6 +168,22 @@ bool dump_qi()
   return true;
 }
 
+// Outside [1e2, 1e7], ch.c++ suffers degeneracies and overshoots.
+constexpr auto scale = 1e6;
+
+void randomSites_d(vertex* dst, int n) {
+  unsigned short x[3]; // deliberately uninitialized for a mere demo
+  for (auto j=0; j<n; ++j)
+  for (auto i=0; i<d; ++i)
+    dst[j][i] = scale * erand48(x);
+}
+void randomSites_e(e_vertex* dst, int n) {
+  unsigned short x[3]; // deliberately uninitialized for a mere demo
+  for (auto j=0; j<n; ++j)
+  for (auto i=0; i<e; ++i)
+    dst[j][i] = scale * erand48(x);
+}
+
 bool init()
 {
   if (e < d)
@@ -208,18 +191,14 @@ bool init()
     printf("error: e (%d) cannot be smaller than d (%d).\n", e, d);
     return false;
     }
-  char buf[1000];
 
-  // Get output sites p_i.
-
-  const int cPointBecomesThis = d==2 ? 30 : d+10;
-  sprintf(buf, "./rsites %d %d > %s", cPointBecomesThis, e, szFilePi);
-  if (system(buf) < 0)
-    fprintf(stderr, "system command failed\n");
-  pi = readEVertices(szFilePi, cPoint);
-  // szFilePi is a sequence of lines.
-  // Each line is the coords of an e-vertex.
-  // Vertex indices refer to this sequence (which starts at zero).
+  // Make output sites p_i.
+  {
+    const auto cPointBecomesThis = d==2 ? 30 : d+10;
+    pi = new e_vertex[cPointBecomesThis];
+    randomSites_e(pi, cPointBecomesThis);
+    cPoint = cPointBecomesThis;
+  }
 
   // Get input sites q_i.
 
@@ -228,28 +207,24 @@ bool init()
   switch (q_i_kind)
     {
   case q_i_Manual:
-    sprintf(buf, "./rsites %d %d > %s", cPoint, d, szFileQi);
-    if (system(buf) < 0)
-      fprintf(stderr, "system command failed\n");
-    qi = readVertices(szFileQi, cPoint);
+    qi = new vertex[cPoint];
+    randomSites_d(qi, cPoint);
     break;
   case q_i_SammonsMapping:
-    qi = computeSammon(pi, cPoint, 1e6 /*scaled to match rsites's output*/);
+    qi = computeSammon(pi, cPoint, scale);
     if (!dump_qi())
       return false;
     break;
   case q_i_GeneticAlgorithm:
-    double* tmp = new double[e*cPoint];
+    double tmp[e*cPoint];
     for (int i=0; i<cPoint; ++i)
     for (int j=0; j<e; ++j)
       tmp[i*e + j] = pi[i][j];
     const Member* foo = GADistanceMatrix(cPoint, e, d, tmp);
-    delete [] tmp;
     qi = new vertex[cPoint];
     for (int i=0; i<cPoint; ++i)
     for (int j=0; j<d; ++j)
-      qi[i][j] = double(foo->rgl[i*d + j]) / sHuge * 1e6;
-      // *1e6 scales to match range of rsites's output.
+      qi[i][j] = scale * double(foo->rgl[i*d + j]) / sHuge;
     if (!dump_qi())
       return false;
     break;
@@ -258,6 +233,7 @@ bool init()
     return false;
 
   // Compute Delaunay triangulation.
+  char buf[1000];
   sprintf(buf, "cat %s | ./hull -d | sed '2,$!d' > %s", szFileQi, szFileSi);
   if (system(buf) < 0)
     fprintf(stderr, "system command failed\n");
@@ -432,7 +408,6 @@ void eval(const vertex& q, e_vertex& p)
 #endif
 
   // Compute a weighted sum, weights w[] and vertex pi[s[]].
-
   for (j=0; j<e; ++j)
     {
     double _ = 0;
@@ -446,38 +421,23 @@ void eval(const vertex& q, e_vertex& p)
 
 void evalAutomatic()
 {
-  // Exercise the evaluation function.
-  char buf[1000];
-  const char* szFileTest = "/tmp/.test";
-  const int ctest = 20; // 100000 for timing tests
-  sprintf(buf, "./rsites %d %d > %s", ctest, d, szFileTest);
-  if (system(buf) < 0)
-    fprintf(stderr, "system command failed\n");
-
+  // Exercise the evaluation function eval().
   // Compiled -O2 or -O3 for a 1GHz Pentium III,
   // this does one test in 310 usec or 3200 tests per second for e=42, d=7.
   // For d=3, 100 usec/test or 10000 tests/sec.
   // For d=2, 66 usec/test or 15000 tests/sec.
 
-  int cqtest;
-  vertex* qtest = readVertices(szFileTest, cqtest);
-  for (int i=0; i<cqtest; ++i)
+  constexpr auto ctest = 20; // 100000 for timing tests
+  vertex qtest[ctest];
+  randomSites_d(qtest, ctest);
+  for (int i=0; i<ctest; ++i)
     {
-    printf("eval %d/%d\n", i, cqtest);
+    printf("eval %d/%d\n", i, ctest);
     e_vertex p;
     qtest[i].dump("query: ");
     eval(qtest[i], p);
     p.dump("result: ");
     }
-}
-
-void drawCircle(double radius)
-{
-  // optimize: precompute cos&sin;  scale instead of *radius.
-  glBegin(GL_POLYGON);
-  for (float a=0; a<=2*M_PI; a += .1)
-    glVertex2f(radius * cos(a), radius * sin(a));
-  glEnd();
 }
 
 vertex vQ;
@@ -521,11 +481,16 @@ void display()
   glColor3f(.5,.5,.5);
   for (i=0; i<=d; ++i)
     {
+    const auto iVertex = s[i];
+    const auto& v = iVertex<0 ? qC : qi[iVertex];
+    const auto r = 0.07 * scale * sqrt(fabs(wFound[i]));
     glPushMatrix();
-    const int iVertex = s[i];
-    const vertex& v = iVertex<0 ? qC : qi[iVertex];
     glTranslatef(v[0], v[1], 0);
-    drawCircle(sqrt(fabs(wFound[i])) * 5e4);
+    glScalef(r, r, 0);
+    glBegin(GL_POLYGON);
+    for (auto a = 0.0; a <= 2.0*M_PI; a += 0.05)
+      glVertex2f(cos(a), sin(a));
+    glEnd();
     glPopMatrix();
     }
 
@@ -592,12 +557,12 @@ void display()
 int xSize = 700;
 int ySize = 700;
 
-const int margin = 200000;
+const auto margin = 0.15 * scale;
 
 inline void XYFromMouse(double& x, double& y, int xM, int yM)
 {
-  x = double(xM) / double(xSize)        * (1e6 + 2*margin) - margin;
-  y = (1. - double(yM) / double(ySize)) * (1e6 + 2*margin) - margin;
+  x =       double(xM) / xSize  * (scale + 2*margin) - margin;
+  y = (1. - double(yM) / ySize) * (scale + 2*margin) - margin;
 }
 
 void mouse_hover(int x, int y)
@@ -633,7 +598,7 @@ void reshape(int w, int h)
   ySize = h;
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  gluOrtho2D(-margin, margin+1e6, -margin, margin+1e6);
+  gluOrtho2D(-margin, margin+scale, -margin, margin+scale);
 }
 
 void evalInteractive(int argc, char** argv)
@@ -668,12 +633,15 @@ void evalInteractive(int argc, char** argv)
   glutMainLoop(); // never returns
 }
 
-int main(int argc, char** argv)
+int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
   if (!init())
     return -1;
-  // evalAutomatic();
+#if 0
+  evalAutomatic();
+#else
   evalInteractive(argc, argv);
+#endif
   terminate();
   return 0;
 }
