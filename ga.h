@@ -1,7 +1,3 @@
-// This library implements simplicial interpolation as described in
-// "Interpolated Mappings for Musical Instruments", Organised Sound 7(2),
-// Cambridge University Press.  Copyright 2002 Camille Goudeseune.
-
 void* GA(					// run the GA.  returns member.
         int cbMemberArg,			// size of population
         void (*pfnGenerateRandom)(void* pv),	// randomly generate a member

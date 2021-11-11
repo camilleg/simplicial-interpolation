@@ -1,15 +1,8 @@
-// This library implements simplicial interpolation as described in
-// "Interpolated Mappings for Musical Instruments", Organised Sound 7(2),
-// Cambridge University Press.  Copyright 2002 Camille Goudeseune.
+// Approximate a solution with a genetic algorithm.
+// Then relax to the local maximum that the GA was approaching.
 
-// Use GA to get an approximate solution,
-// then use relaxation/iteration to converge to the local maximum which
-// the GA was approaching.
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <float.h>
+#include <cmath>
+#include <limits>
 
 #include "ga.h"
 #include "gacli.h"
@@ -48,8 +41,8 @@ void InitDistanceMatrixZ(int cpt, int cdimSrc, double* rgzDist, double* rgzPt)
   // compute scaling factors for each dimension
     for (int idim=0; idim<cdimSrc; idim++)
       {
-      double zMin =  DBL_MAX;
-      double zMax = -DBL_MAX;
+      auto zMin = std::numeric_limits<double>::max();
+      auto zMax = -zMin;
       for (i=0; i<cpt; i++)
 	{
 	if (rgzPt[i * cdimSrc + idim] < zMin)

@@ -1,30 +1,21 @@
-// This library implements simplicial interpolation as described in
-// "Interpolated Mappings for Musical Instruments", Organised Sound 7(2),
-// Cambridge University Press.  Copyright 2002 Camille Goudeseune.
-
 // Simplicial interpolation.
 
-#include <float.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cmath>
+#include <cstdio>
+#include <limits>
 #include <unistd.h>
 
-#include "si.h"
 #include "bary.h"
+#include "edahiro.h"
 #include "gacli.h"
 #include "sammon.h"
-#include "edahiro.h"
 
 #ifdef __APPLE__
-// Mac OS X 10.3.9 patch by Hans-Christoph Steiner, 2006 Jan 31
-#include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
-#include <GLUT/glut.h>
+  #include <OpenGL/gl.h>
+  #include <OpenGL/glu.h>
+  #include <GLUT/glut.h>
 #else
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include <GL/glut.h>
+  #include <GL/glut.h>
 #endif
 
 int cPoint = -1;
@@ -254,8 +245,8 @@ bool init()
   int i;
   for (i=0; i<d; ++i)
     {
-    float zMin = DBL_MAX;
-    float zMax = -DBL_MAX;
+    auto zMin = std::numeric_limits<double>::max();
+    auto zMax = -zMin;
     for (int j=0; j<cPoint; ++j)
       {
       const double z = qi[j][i];

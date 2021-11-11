@@ -1,13 +1,8 @@
-// This library implements simplicial interpolation as described in
-// "Interpolated Mappings for Musical Instruments", Organised Sound 7(2),
-// Cambridge University Press.  Copyright 2002 Camille Goudeseune.
+#include <cmath>
+#include <cstdio>
 
-#include <stdio.h>
-#include <string.h>
 #include "si.h"
 #include "det.h"
-
-#include <math.h>
 
 // Solve Ax=b, where A is d*d.  Returns false iff a is singular.
 // Crout's algorithm replaces a with its LU decomposition;

@@ -1,7 +1,3 @@
-// This library implements simplicial interpolation as described in
-// "Interpolated Mappings for Musical Instruments", Organised Sound 7(2),
-// Cambridge University Press.  Copyright 2002 Camille Goudeseune.
-
 // Constant-time lookup of which triangle contains a query point.
 //
 // Bucketing algorithm.  C++ translation of [Edahiro84]'s FORTRAN code.
@@ -14,7 +10,7 @@
 
 #include <cmath>
 #include <cstdio>
-#include <limits>
+
 #include "edahiro.h"
 
 class Vertex

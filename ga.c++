@@ -1,13 +1,10 @@
-// This library implements simplicial interpolation as described in
-// "Interpolated Mappings for Musical Instruments", Organised Sound 7(2),
-// Cambridge University Press.  Copyright 2002 Camille Goudeseune.
-
-#include <float.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <limits>
 #include <sys/time.h>
+
 #include "ga.h"
 
 #undef NOISY
@@ -267,7 +264,7 @@ void* GA(
   Tweak = pfnTweak;
   ComputeSuitability = pfnComputeSuitability;
   zFitnessMax = zSuitabilityMaxArg;
-  zFitnessMin = -DBL_MAX;
+  zFitnessMin = -std::numeric_limits<double>::max();
   double BestSuitEver = zFitnessMin;
   cBest = cBestArg;
 

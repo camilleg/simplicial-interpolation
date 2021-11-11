@@ -1,12 +1,8 @@
-// This library implements simplicial interpolation as described in
-// "Interpolated Mappings for Musical Instruments", Organised Sound 7(2),
-// Cambridge University Press.  Copyright 2002 Camille Goudeseune.
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+#include <limits>
 
-#include <float.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "sammon.h"
 #include "util.h"
 
@@ -33,7 +29,7 @@ vertex* computeSammon(const e_vertex* pi, const int cpt, const double scalar)
   // Run Sammon's Mapping crun times, and keep the best run so far.
   const int crun = 1000;
   int runLastGood = -1;
-  double errorMin = DBL_MAX;
+  double errorMin = std::numeric_limits<double>::max();
   for (int run=0; run<crun; ++run)
     {
     if (run - runLastGood > crun/4)

@@ -1,4 +1,3 @@
-/* hull.h */
 /*
  * Ken Clarkson wrote this.  Copyright (c) 1995 by AT&T..
  * Permission to use, copy, modify, and distribute this software for any
