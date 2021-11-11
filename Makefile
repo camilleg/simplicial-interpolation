@@ -1,3 +1,4 @@
+MAKEFLAGS += --jobs=99
 UNAME_S := $(shell sh -c 'uname -s 2>/dev/null')
 ifeq ($(UNAME_S),Darwin)
   CC = clang++
