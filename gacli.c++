@@ -2,6 +2,7 @@
 // Then relax to the local maximum that the GA was approaching.
 
 #include <cmath>
+#include <cstdlib> // random()
 #include <limits>
 
 #include "ga.h"

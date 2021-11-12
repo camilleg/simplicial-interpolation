@@ -1,5 +1,6 @@
 #include <cmath>
 #include <cstdio>
+#include <cstdlib> // drand48(), rand()
 #include <cstring>
 #include <limits>
 
