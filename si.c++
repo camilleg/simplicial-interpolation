@@ -544,7 +544,6 @@ void display()
 
   glutSwapBuffers();
 #endif
-  usleep(2000); // CPU throttle
 }
 
 int xSize = 700;
