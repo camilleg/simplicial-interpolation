@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstdlib> // strtoXXX, erand48, exit
 #include <limits>
 #include <unistd.h>
 
