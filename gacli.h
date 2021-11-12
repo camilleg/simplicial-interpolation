@@ -8,4 +8,4 @@ typedef struct
 } Member;
 const short sHuge = 0x7fff;
 
-extern Member* GADistanceMatrix(int cptArg, int cdimSrcArg, int cdimDstArg, double* rgzSrc);
+Member* GADistanceMatrix(int cptArg, int cdimSrcArg, int cdimDstArg, double* rgzSrc);

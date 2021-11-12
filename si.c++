@@ -345,7 +345,7 @@ int searchEdahiro(const vertex& q, double* w)
   return searchRaySimplices(q, w);
 }
 
-#define DATAVIZ
+#define DATAVIZ // For evalInteractive().
 #ifdef DATAVIZ
 int iFound = 0;
 double wFound[d+1] = {0};
@@ -425,9 +425,9 @@ void evalAutomatic()
     {
     printf("eval %d/%d\n", i, ctest);
     e_vertex p;
-    qtest[i].dump("query: ");
+    dump_d("query: ", qtest[i]);
     eval(qtest[i], p);
-    p.dump("result: ");
+    dump_e("result: ", p);
     }
 }
 
@@ -435,6 +435,7 @@ vertex vQ;
 
 void display()
 {
+#ifdef DATAVIZ
   glClear(GL_COLOR_BUFFER_BIT);
   int i, j;
 
@@ -506,7 +507,7 @@ void display()
   if (fInside)
     glColor3f(0,.35,0);
   else
-    glColor3f(0,1,0);
+    glColor3f(0,0.7,0);
   for (i=csi; i<csiAll; ++i)
     {
     const simplex& s = si[i];
@@ -542,6 +543,7 @@ void display()
     }
 
   glutSwapBuffers();
+#endif
   usleep(2000); // CPU throttle
 }
 

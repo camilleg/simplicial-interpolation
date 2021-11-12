@@ -1,64 +1,49 @@
-// Extend an R^d to R^e map from pointwise to continuous,
-// via simplicial interpolation.
+// Extend an R^d to R^e map from pointwise to continuous, via simplicial interpolation.
 
 #pragma once
+#include <array>
+#include <iostream>
+using std::cout;
 
-const int d = 2;
-const int e = 8;
+constexpr auto d = 2;
+constexpr auto e = 8;
 
 #undef TESTING
 
-// (d-)vertex and e-vertex.
+// d-vertex and e-vertex.
 // Most computation is done in d-space, so d is often implicit.
-class vertex
-  {
- public:
-  double x[d];
-  double& operator[](int i) { return x[i]; }
-  double  operator[](int i) const { return x[i]; }
-  void dump(const char* sz = "v: ") const
-    { printf("%s", sz); for (int i=0; i<d; i++) printf("%g ", x[i]); printf("\n"); }
-  };
-class e_vertex
-  {
- public:
-  double x[e];
-  double& operator[](int i) { return x[i]; }
-  double  operator[](int i) const { return x[i]; }
-  void dump(const char* sz = "v: ") const
-    { printf("%s", sz); for (int i=0; i<e; i++) printf("%g ", x[i]); printf("\n"); }
-  };
+using   vertex = std::array<double, d>;
+using e_vertex = std::array<double, e>;
+inline void dump_d(const char* sz, const   vertex& a) { cout << sz; for (int i=0; i<d; ++i) cout << a[i]; cout << "\n"; }
+inline void dump_e(const char* sz, const e_vertex& a) { cout << sz; for (int i=0; i<e; ++i) cout << a[i]; cout << "\n"; }
 
 extern vertex* qi; // for simplex::dump()
 
-// Entries x[] of a simplex are indices into the array of vertices qi[].
-// If -1, an entry indicates qC, the common center point of the ray-simplices.
-class simplex
+// A simplex's x[]'s are indices into the vertices qi[];
+// -1 indicates qC, the common center point of the ray-simplices.
+struct simplex
   {
- public:
   int x[d+1];
   int& operator[](int i) { return x[i]; }
   int  operator[](int i) const { return x[i]; }
   void dump(const char* sz = "s:") const
-    { printf("%s\n", sz); for (int i=0; i<d+1; i++) qi[x[i]].dump("\t"); }
-  void dumpi(const char* sz = "s:") const
-    { printf("%s: ", sz); for (int i=0; i<d+1; i++) printf("%d ", x[i]); printf("\n"); }
+    { cout << sz << "\n"; for (auto i=0; i<d+1; ++i) dump_d("\t", qi[x[i]]); }
   };
 
 // Inward-pointing normal vector of, and a point on, each facet of a simplex.
 // Precomputing these speeds up computation of barycentric coordinates.
-class simplexHint
+struct simplexHint
   {
- public:
   vertex facetnormal[d+1];
   const vertex* facetvertex[d+1];
   double facetvolume[d+1];
+#ifdef UNUSED
   void dump(const char* sz = "hint:") const
-    { printf("%s\n", sz);
-      for (int i=0; i<d+1; i++) facetnormal[i].dump("\tnormal: ");
-      for (int i=0; i<d+1; i++) facetvertex[i]->dump("\tvertex: ");
+    { cout << sz << "\n";
+      for (int i=0; i<d+1; i++) dump_d("\tnormal: ", facetnormal[i]);
+      for (int i=0; i<d+1; i++) dump_d("\tvertex: ", *facetvertex[i]);
       for (int i=0; i<d+1; i++) printf("\tvolume: %f\n", facetvolume[i]); }
+#endif
   };
 
-inline double sq(double _)
-  { return _*_; }
+inline double sq(double _) { return _*_; }

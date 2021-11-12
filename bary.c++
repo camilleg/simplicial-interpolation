@@ -4,10 +4,10 @@
 #include "si.h"
 #include "det.h"
 
-// Solve Ax=b, where A is d*d.  Returns false iff a is singular.
-// Crout's algorithm replaces a with its LU decomposition;
-// then back-substitution solves for x.  x is stored in b[].
-bool solveMatrix(double a[][d], double b[])
+// Solve Ax=b, where A is d*d.  Returns false iff A is singular.
+// Crout's algorithm replaces A with its LU decomposition.
+// Then back-substitution solves for x, which is stored in b.
+bool solveMatrix(double a[][d], vertex& b)
 {
   int i, j, k;
   double scaling[d];
@@ -97,7 +97,7 @@ bool solveMatrix(double a[][d], double b[])
 }
 
 bool precomputeBary(const simplex& s, simplexHint& h, const vertex& centroid,
-  const vertex* rgv, const vertex* raysCentroid, bool fRaySimplex)
+  const vertex* rgv, const vertex* raysCentroid, [[maybe_unused]] bool fRaySimplex)
 {
   if (d <= 1)
     return false;
@@ -163,8 +163,6 @@ bool precomputeBary(const simplex& s, simplexHint& h, const vertex& centroid,
       if (fRaySimplex && i == d && ivertex != -1)
         printf("internal error: inconsistency #3: %d %d in precomputeBary.\n", i, d);
       schmoo[j] = ivertex;
-#else
-      (void)fRaySimplex;
 #endif
       if (j >= d)
         printf("internal error in precomputeBary!\n");
@@ -176,11 +174,9 @@ bool precomputeBary(const simplex& s, simplexHint& h, const vertex& centroid,
       }
 
 #ifdef TESTING
-      //{
-      //for (j=0; j<d; ++j)
-      //  printf("facet %d, rgvFacet[%d] = %d\n", ifacet, j, schmoo[j]);
-      //printf("\n");
-      //}
+      for (j=0; j<d; ++j)
+	printf("facet %d, rgvFacet[%d] = %d\n", ifacet, j, schmoo[j]);
+      printf("\n");
 #endif
 
     vertex& vNormal = h.facetnormal[ifacet];
@@ -196,7 +192,7 @@ bool precomputeBary(const simplex& s, simplexHint& h, const vertex& centroid,
 	a[i][j] = (*rgvFacet[i])[j] - (*rgvFacet[0])[j];
 	}
 
-    if (!solveMatrix(a, vNormal.x))
+    if (!solveMatrix(a, vNormal))
       {
       printf("Internal error in precomputeBary().\n");
       // Matrix a was probably singular.  Because s had degenerate faces.
@@ -239,16 +235,17 @@ bool precomputeBary(const simplex& s, simplexHint& h, const vertex& centroid,
     for (i=1; i<d; ++i)
       {
       // Verify that a[i][] dot vNormal[] == 0.
+      printf("Checking facet %d, row %d.\n", ifacet, i);
       double t = 0.;
       for (j=0; j<d; ++j)
         t += a[i][j] * vNormal[j];
       if (fabs(t) > .0001)
 	{
-        printf("Internal error in precomputeBary: normal isn't normal to row %d of facet %d: %g.\n",
-	  i, ifacet, t);
+        printf("Internal error in precomputeBary: vNormal isn't normal to facet %d's row %d:\n", ifacet, i);
+	printf("  (%g, %g) dot (%g, %g) = %g, not zero.\n",
+	    a[i][0], a[i][1], vNormal[0], vNormal[1], t);
 	return false;
 	}
-//    printf("Normal! %g\n", fabs(t));
       }
     }
 #endif
@@ -266,8 +263,8 @@ bool precomputeBary(const simplex& s, simplexHint& h, const vertex& centroid,
     case 2:
 	{
 	// Fast: Euclidean distance from rgvFacet[0] to rgvFacet[1].
-	const double* a = &(*rgvFacet[0]).x[0];
-	const double* b = &(*rgvFacet[1]).x[0];
+	const auto& a = *rgvFacet[0];
+	const auto& b = *rgvFacet[1];
 	h.facetvolume[ifacet] = hypot(b[0]-a[0], b[1]-a[1]); // these values are OK, 8/29/02
 	break;
 	}
@@ -275,9 +272,9 @@ bool precomputeBary(const simplex& s, simplexHint& h, const vertex& centroid,
 	{
 	// Fast: Area of triangle.
 	// Vertices.
-	const double* a = &(*rgvFacet[0]).x[0];
-	const double* b = &(*rgvFacet[1]).x[0];
-	const double* c = &(*rgvFacet[2]).x[0];
+	const auto& a = *rgvFacet[0];
+	const auto& b = *rgvFacet[1];
+	const auto& c = *rgvFacet[2];
 	// Side lengths.
 	const double la = sqrt(sq(b[0]-c[0]) + sq(b[1]-c[1]) + sq(b[2]-c[2]));
 	const double lb = sqrt(sq(c[0]-a[0]) + sq(c[1]-a[1]) + sq(c[2]-a[2]));
@@ -289,8 +286,7 @@ bool precomputeBary(const simplex& s, simplexHint& h, const vertex& centroid,
 	}
     default:
       // Compute volume via a generalization of Heron's formula,
-      // the Cayley-Menger determinant
-      // <http://mathworld.wolfram.com/Cayley-MengerDeterminant.html>.
+      // the Cayley-Menger determinant.
 
       double m[(d+1)*(d+1)];
       // Optimization:  m[] is symmetric in its main diagonal,
@@ -309,8 +305,8 @@ bool precomputeBary(const simplex& s, simplexHint& h, const vertex& centroid,
 	double _ = 0.;
 	if (i != j)
 	  {
-	  const double* a = &(*rgvFacet[i]).x[0];
-	  const double* b = &(*rgvFacet[j]).x[0];
+	  const auto& a = *rgvFacet[i];
+	  const auto& b = *rgvFacet[j];
 	  for (int k=0; k<d; ++k)
 	    _ += sq(a[k] - b[k]);
 	  }

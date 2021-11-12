@@ -1,1 +1,1 @@
-extern double determinant(const double*, const int);
+double determinant(const double*, int);
