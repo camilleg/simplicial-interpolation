@@ -353,8 +353,8 @@ double wFound[d+1] = {0};
 vertex rFound;
 #endif
 
-// Map d-vertex q to e-vertex p.
-void eval(const vertex& q, e_vertex& p)
+// Map a d-vertex to an e-vertex.
+e_vertex eval(const vertex& q)
 {
   // Find which simplex s contains q.
 
@@ -399,16 +399,12 @@ void eval(const vertex& q, e_vertex& p)
     wFound[j] = w[j];
 #endif
 
-  // Compute a weighted sum, weights w[] and vertex pi[s[]].
+  // Compute a weighted sum with weights w[] and vertices pi[s[]].
+  e_vertex p = {0};
   for (j=0; j<e; ++j)
-    {
-    double _ = 0;
     for (i=0; i<d+1; ++i)
-      {
-      _ += w[i] * pi[s[i]][j];
-      }
-    p[j] = _;
-    }
+      p[j] += w[i] * pi[s[i]][j];
+  return p;
 }
 
 void evalAutomatic()
@@ -425,9 +421,9 @@ void evalAutomatic()
   for (int i=0; i<ctest; ++i)
     {
     printf("eval %d/%d\n", i, ctest);
-    e_vertex p;
-    dump_d("query: ", qtest[i]);
-    eval(qtest[i], p);
+    const auto q = qtest[i];
+    dump_d("query: ", q);
+    const auto p = eval(q);
     dump_e("result: ", p);
     }
 }
@@ -561,8 +557,7 @@ inline void XYFromMouse(double& x, double& y, int xM, int yM)
 void mouse_hover(int x, int y)
 {
   XYFromMouse(vQ[0], vQ[1], x, y);
-  e_vertex p;
-  eval(vQ, p);
+  (void)eval(vQ);
 }
 
 #ifdef MUST_HOLD_DOWN_MOUSE_BUTTON
