@@ -17,10 +17,10 @@ ifeq ($(UNAME_S),Darwin)
 endif
 
 OBJS_HULL = hull.o ch.o io.o rand.o pointops.o fg.o hullmain.o
-OBJS_SI = si.o sammon.o ga.o gacli.o det.o bary.o edahiro.o
+OBJS_SI = si.o sammon.o ga.o gacli.o bary.o edahiro.o
 
 HDRS_HULL = hull.h points.h pointsites.h stormacs.h
-HDRS_SI = si.h sammon.h ga.h gacli.h bary.h det.h util.h edahiro.h
+HDRS_SI = si.h sammon.h ga.h gacli.h bary.h util.h edahiro.h
 
 EXES = hull si
 
