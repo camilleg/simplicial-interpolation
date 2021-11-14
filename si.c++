@@ -428,7 +428,8 @@ void evalAutomatic()
     }
 }
 
-vertex vQ;
+constexpr auto NaN = std::numeric_limits<double>::signaling_NaN();
+vertex vQ{NaN,NaN};
 
 void display()
 {
@@ -526,10 +527,13 @@ void display()
   glutBitmapCharacter(GLUT_BITMAP_8_BY_13, 'R');
 #endif
 
-  // Query point.
-  glColor3f(1,1,1);
-  glRasterPos2f(vQ[0], vQ[1]);
-  glutBitmapCharacter(GLUT_BITMAP_8_BY_13, 'q');
+  if (!std::isnan(vQ[0]))
+    {
+    // Query point.
+    glColor3f(1,1,1);
+    glRasterPos2f(vQ[0], vQ[1]);
+    glutBitmapCharacter(GLUT_BITMAP_8_BY_13, 'q');
+    }
 
   // Vertices.
   glColor3f(1,1,0);
