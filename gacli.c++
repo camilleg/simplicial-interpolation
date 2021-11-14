@@ -5,19 +5,24 @@
 #include <cstdlib> // random()
 #include <limits>
 
+#undef VERBOSE
+#ifdef VERBOSE
+#include <cstdio>
+#endif
+
 #include "ga.h"
 #include "gacli.h"
 #include "util.h"
 
-// Make these class variables if you want reentrancy.
+// All of this file's vars and functions could be wrapped into a class, of course.
 static int cpt = -1;
 static int cdimSrc = -1;
 static int cdimDst = -1;
 
 //;; iloop jloop rg[triangularNumber(cpt,i,j)]  -->  iloop rg[i]
 
-double* rgzDistSrc;
-double* rgzDistDst;
+static double* rgzDistSrc = nullptr;
+static double* rgzDistDst = nullptr;
 
 inline double sq(double _) { return _*_; }
 
@@ -34,79 +39,58 @@ Later: log-scale distance option for some dimensions. (use log(x) internally
 
 void InitDistanceMatrixZ(int cpt, int cdimSrc, double* rgzDist, double* rgzPt)
 {
-  int i;
-  int j;
-  double rgzScale[100/*;;max dim*/];
-
-  {
   // compute scaling factors for each dimension
-    for (int idim=0; idim<cdimSrc; idim++)
-      {
-      auto zMin = std::numeric_limits<double>::max();
-      auto zMax = -zMin;
-      for (i=0; i<cpt; i++)
-	{
-	if (rgzPt[i * cdimSrc + idim] < zMin)
-	  zMin = rgzPt[i * cdimSrc + idim];
-	if (rgzPt[i * cdimSrc + idim] > zMax)
-	  zMax = rgzPt[i * cdimSrc + idim];
-	}
-      rgzScale[idim] = (zMax==zMin) ? 1.f : 1.f / (zMax - zMin);
-      }
+  double rgzScale[cdimSrc];
+  for (auto idim=0; idim<cdimSrc; ++idim) {
+    auto zMin = std::numeric_limits<double>::max();
+    auto zMax = -zMin;
+    for (auto i=0; i<cpt; ++i) {
+      zMin = std::min(zMin, rgzPt[i * cdimSrc + idim]);
+      zMax = std::max(zMax, rgzPt[i * cdimSrc + idim]);
+    }
+    rgzScale[idim] = zMax==zMin ? 1.0 : 1.0/(zMax-zMin);
   }
 
-  double zDistMax = 0.;
-  for (i=0; i<cpt-1; i++)
-  for (j=i+1; j<cpt; j++)
-    {
-    double zSum = 0.;
-    for (int idim = 0; idim < cdimSrc; idim++)
-      {
+  auto zDistMax = 0.0;
+  for (auto i=0; i<cpt-1; ++i)
+  for (auto j=i+1; j<cpt; ++j) {
+    auto zSum = 0.0;
+    for (auto idim = 0; idim < cdimSrc; ++idim) {
       zSum += sq((rgzPt[i * cdimSrc + idim] -
 	 rgzPt[j * cdimSrc + idim]) * rgzScale[idim]);
-      }
-    double tmp = rgzDist[TriIJ(i,j,cpt)] = sqrt(zSum);
-    if (tmp > zDistMax)
-      zDistMax = tmp;
     }
+    zDistMax = std::max(zDistMax, rgzDist[TriIJ(i,j,cpt)] = sqrt(zSum));
+  }
   // normalize distances wrt longest distance.
-  for (i=0; i<cpt-1; i++)
-  for (j=i+1; j<cpt; j++)
+  for (auto i=0; i<cpt-1; ++i)
+  for (auto j=i+1; j<cpt; ++j)
     rgzDist[TriIJ(i,j,cpt)] /= zDistMax;
 }
 
 void InitDistanceMatrixL(int cpt, int cdimDst, double* rgzDist, short* rgzPt)
 {
-  int i;
-  int j;
-
-  double zDistMax = 0.;
-  for (i=0; i<cpt-1; i++)
-  for (j=i+1; j<cpt; j++)
-    {
+  auto zDistMax = 0.0;
+  for (auto i=0; i<cpt-1; ++i)
+  for (auto j=i+1; j<cpt; ++j) {
     short* psi = rgzPt + i*cdimDst;
     short* psj = rgzPt + j*cdimDst;
-    double zSum = 0.;
-    for (int idim = cdimDst; idim > 0; idim--)
-      zSum += sq((double)(*psi++ - *psj++));
-    double tmp = rgzDist[TriIJ(i,j,cpt)] = sqrt(zSum);
-    if (tmp > zDistMax)
-      zDistMax = tmp;
-    }
+    auto zSum = 0.0;
+    for (auto idim = cdimDst; idim > 0; --idim)
+      zSum += sq(*psi++ - *psj++);
+    zDistMax = std::max(zDistMax, rgzDist[TriIJ(i,j,cpt)] = sqrt(zSum));
+  }
   // normalize distances wrt longest distance.
 //;; this can be a k-loop, and above in InitDistanceMatrixZ
-  for (i=0; i<cpt-1; i++)
-    {
-    for (j=i+1; j<cpt; j++)
-      rgzDist[TriIJ(i,j,cpt)] /= zDistMax;
-    }
+  for (auto i=0; i<cpt-1; ++i)
+  for (auto j=i+1; j<cpt; ++j)
+    rgzDist[TriIJ(i,j,cpt)] /= zDistMax;
 }
 
 // Compute RMS error between 2 distance vectors (possibly triangular matrices).
 inline double DDistanceMatrix(double* rgzDist0, double* rgzDist1, int cpt)
 {
-  double z = 0.;
-  for (int k=0; k<cpt; ++k)
+  auto z = 0.0;
+  for (auto k=0; k<cpt; ++k)
     z += sq(rgzDist0[k] - rgzDist1[k]);
 
 //return sqrt(z / (double)cpt);
@@ -115,36 +99,30 @@ inline double DDistanceMatrix(double* rgzDist0, double* rgzDist1, int cpt)
   return z;
 }
 
-const double zTweakBuffer = .8f; // chicken factor
+constexpr auto zTweakBuffer = 0.8; // chicken factor
 
 // scale the member up, same scale along all dimensions.
 void Tweak(void* pv)
 {
   short sMin = sHuge;
   short sMax = -sHuge;
-
-  int i;
   short* ps = ((Member*)pv)->rgl;
-  for (i=0; i<cpt*cdimDst; ++i)
-    {
-    if (ps[i] < sMin)
-      sMin = ps[i];
-    if (ps[i] > sMax)
-      sMax = ps[i];
-    }
+  for (auto i=0; i<cpt*cdimDst; ++i) {
+    sMin = std::min(sMin, ps[i]);
+    sMax = std::max(sMax, ps[i]);
+  }
 
-  // now linearly map [sMin, sMax] to [0, sHuge]
-  double m = zTweakBuffer * (double)sHuge / (double)(sMax - sMin);
-
-  //;; skip this if m is almost 1?  Collect stats on value of m.
-  for (i=0; i<cpt*cdimDst; ++i)
-    ps[i] = (short)((ps[i] - sMin) * m);
+  // Linearly map [sMin, sMax] to [0, sHuge].
+  //;; Skip this if m is almost 1?  Collect stats on value of m.
+  const auto m = zTweakBuffer * sHuge / (sMax - sMin);
+  for (auto i=0; i<cpt*cdimDst; ++i)
+    ps[i] = (ps[i] - sMin) * m;
 }
 
 void GenerateRandom(void* pv)
 {
   short* ps = ((Member*)pv)->rgl;
-  for (int i=0; i<cpt*cdimDst; ++i)
+  for (auto i=0; i<cpt*cdimDst; ++i)
     ps[i] = short(random() & sHuge);
   Tweak(pv);
 }
@@ -153,26 +131,24 @@ void MutateRandom(void* pv, long cIter)
 {
   static long lMask = random();
   {
-  // Use the same bit pattern for a while,
-  // so the same points get tweaked in one generation.
-  static int _= -1;
-  if ((++_ %= 50) == 0) lMask = random();
+    // Use the same bit pattern for a while,
+    // so the same points get tweaked in one generation.
+    static int _= -1;
+    if ((++_ %= 50) == 0) lMask = random();
   }
 
-  int ibit = 0;
-  const int cbit = 2;	// size of bitfield to test.
-			// big == fewer mutations.
-  const short denom = short(1 + 3. * sqrt(10.*cIter));
+  auto ibit = 0;
+  const int cbit = 2; // Size of bitfield to test.  Bigger means fewer mutations.
+  const short denom = 1.0 + 3.0 * sqrt(10.0 * cIter);
   short* ps = ((Member*)pv)->rgl;
-  for (int i=0; i<cpt*cdimDst; ++i)
-    {
+  for (auto i=0; i<cpt*cdimDst; ++i) {
     // Are all cbit bits of the mask, starting at the ibit'th, zero?
     if ((lMask & (((1 << cbit) - 1) << ibit)) == 0)
-      ps[i] += short(((random() & sHuge) - sHuge/2) / denom);
+      ps[i] += ((random() & sHuge) - sHuge/2) / denom;
     // Try next cbit bits next time.
-    if ((ibit+=cbit) >= int(sizeof(long))*8-cbit)
+    if ((ibit += cbit) >= 8 * int(sizeof(long)) - cbit)
       ibit = 0;
-    }
+  }
   Tweak(pv);
 }
 
@@ -180,52 +156,46 @@ double ComputeSuitability(void* pv)
 {
   InitDistanceMatrixL(cpt, cdimDst, rgzDistDst, ((Member*)pv)->rgl);
   return -DDistanceMatrix(rgzDistSrc, rgzDistDst, triangularNumber(cpt-1));
-  // Larger distance == less suitable.
+  // Larger distance means less suitable.
 }
 
-Member* GADistanceMatrix(int cptArg, int cdimSrcArg, int cdimDstArg, double* rgzSrc)
+Member* GADistanceMatrix(int cptArg, int cdimSrcArg, int cdimDstArg, double* rgzPt)
 {
   cpt = cptArg;
   cdimSrc = cdimSrcArg;
   cdimDst = cdimDstArg;
 
-  rgzDistSrc = (double *)calloc(triangularNumber(cpt-1), sizeof(double));
-  rgzDistDst = (double *)calloc(triangularNumber(cpt-1), sizeof(double));
+  // If these two could be passed to ComputeSuitability(), they could be local vars.
+  rgzDistSrc = new double[triangularNumber(cpt-1)];
+  rgzDistDst = new double[triangularNumber(cpt-1)];
 
-  InitDistanceMatrixZ(cpt, cdimSrc, rgzDistSrc, rgzSrc);
+  InitDistanceMatrixZ(cpt, cdimSrc, rgzDistSrc, rgzPt);
 
-  static Member* pmemberBest;
-
-  pmemberBest = (Member*)GA(
+  static auto pmemberBest = (Member*)GA(
     sizeof(short) * cpt * cdimDst,
     GenerateRandom,
     MutateRandom,
     Tweak,
     ComputeSuitability,
-    0.,
+    0.0,
     50,
-    0.6 /* timeout, in seconds */
-    );
+    0.8 /* timeout, in seconds */
+  );
 
-  {
-  short* ps = pmemberBest->rgl;
-  for (int i=0; i<cpt*cdimDst; i++)
-    ps[i] = (short)((double)(ps[i]) / zTweakBuffer);
-  }
+  for (auto i=0; i<cpt*cdimDst; ++i)
+    pmemberBest->rgl[i] /= zTweakBuffer;
 
 #ifdef VERBOSE
-  {
-  // just to print out matrix
+  // Print the matrix.
   InitDistanceMatrixL(cpt, cdimDst, rgzDistDst, pmemberBest->rgl);
-  for (int i=0; i<cpt-1; i++)
+  for (auto i=0; i<cpt-1; ++i)
     {
-    for (int j=i+1; j<cpt; j++)
-      printf("%.3g  ", rgzDistDst[TriIJ(i,j,cpt)]);
+    for (auto j=i+1; j<cpt; ++j)
+      printf("%.02f  ", rgzDistDst[TriIJ(i,j,cpt)]);
     putchar('\n');
     }
-  }
 #endif
-  free(rgzDistSrc);
-  free(rgzDistDst);
+  delete [] rgzDistDst;
+  delete [] rgzDistSrc;
   return pmemberBest;
 }
