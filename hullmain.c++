@@ -7,7 +7,6 @@
 #include <string.h>
 #include <getopt.h>
 #include <ctype.h>
-#include <cstdlib>
 
 /*
  * Ken Clarkson wrote this.  Copyright (c) 1995 by AT&T..
@@ -47,7 +46,7 @@ long site_numm(site p) {
 
 	long i,j;
 
-	if (vd && p==infinity) return -1;
+	if (vd && p==hull_infinity) return -1;
 	if (!p) return -2;
 	for (i=0; i<num_blocks; i++)
 		if ((j=p-site_blocks[i])>=0 && j < BLOCKSIZE*dim) 
@@ -136,7 +135,7 @@ void make_shuffle(void){
 	for (i=0;i<=num_sites;i++) shufmat[i] = i;
 	for (i=0;i<num_sites;i++){
 		t = shufmat[i];
-		shufmat[i] = shufmat[j = i + (num_sites-i)*double_rand()];
+		shufmat[i] = shufmat[j = i + (num_sites-i)*(long)double_rand()];
 		shufmat[j] = t;
 	}
 }
@@ -161,11 +160,7 @@ void tell_options(void) {
 	errline( "-i<name> read input from <name>;");
 	errline( "-X<name> chatter to <name>;");
 	errline( "-f<fmt> main output in <fmt>:");
-#ifdef disabled
 	errline("	ps->postscript, mp->metapost, cpr->cpr format, off->OFF format, vn->vertex numbers(default)");
-#else
-	errline("	ps->postscript, mp->metapost, cpr->cpr format, vn->vertex numbers(default)");
-#endif
 	errline( "-A alpha shape, find suitable alpha");
 	errline( "-aa<alpha> alpha shape, alpha=<alpha>;");
 	errline( "-af<fmt> output alpha shape in <fmt>;");
@@ -183,9 +178,9 @@ void echo_command_line(FILE *F, int argc, char **argv) {
 	fprintf(F,"\n");
 }
 
-const char *output_forms[] = {"vn", "ps", "mp", "cpr" /*, "off"*/};
+const char *output_forms[] = {"vn", "ps", "mp", "cpr", "off"};
 
-out_func *out_funcs[] = {&vlist_out, &ps_out, &mp_out, &cpr_out /*, &off_out*/};
+out_func *out_funcs[] = {&vlist_out, &ps_out, &mp_out, &cpr_out, &off_out};
 
 int set_out_func(char *s) {
 	for (size_t i=0;i< sizeof(out_funcs)/(sizeof (out_func*)); i++)

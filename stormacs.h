@@ -23,7 +23,6 @@ extern void flush_##X##_blocks(void);	\
 void free_##X##_storage(void);		\
 
 #define INCP(X,p,k) ((X *) ( (char*)p + (k) * X##_size)) /* portability? */
-#define DECP(X,p,k) ((X *) ( (char*)p - (k) * X##_size)) /* portability? */
 
 #define STORAGE(X)						\
 								\
@@ -54,7 +53,7 @@ X* new_block_##X(int make_blocks)				\
 								\
 		xlm = INCP(X,xbt,Nobj);				\
 		for (i=0;i<Nobj; i++) {				\
-			xlm = DECP(X,xlm,1);			\
+			xlm = INCP(X,xlm,(-1));			\
 			xlm->next = X##_list;			\
 			X##_list = xlm;				\
 		}						\

@@ -118,8 +118,6 @@ void Vec_scale_test(int n, Coord a, Coord *x)
 int exact_bits;
 float b_err_min, b_err_min_sq;
 
-double logb(double); /* on SGI machines: returns floor of log base 2 */
-
 static short vd;
 static basis_s	tt_basis = {NULL, 1, -1, 0.0, 0.0, {0.0}},
 		*tt_basisp = &tt_basis,
@@ -130,7 +128,7 @@ STORAGE(basis_s)
 
 typedef Coord site_struct;
 
-Coord	infinity[10]={57.2,0,0,0,0}; /* point at infinity for vd; value not used */
+Coord	hull_infinity[10]={57.2,0,0,0,0}; /* point at infinity for vd; value not used */
 	
 void print_site(site p, FILE* F)
 	{print_point(F, pdim,p);fprintf(F, "\n");}
@@ -312,7 +310,7 @@ int reduce(basis_s **v, point p, simplex *s, int k) {
 	else (*v)->lscale = 0;
 	z = VB(*v);
 	if (vd) {
-		if (p==infinity) memcpy(*v,infinity_basis,basis_s_size);
+		if (p==hull_infinity) memcpy(*v,infinity_basis,basis_s_size);
 		else {trans(z,p,tt); lift(z,s);}
 	} else trans(z,p,tt);
 	return reduce_inner(*v,s,k);
@@ -325,7 +323,7 @@ void get_basis_sede(simplex *s) {
 	neighbor *sn = s->neigh+1,
 		 *sn0 = s->neigh;
 
-	if (vd && sn0->vert == infinity && cdim >1) {
+	if (vd && sn0->vert == hull_infinity && cdim >1) {
 		SWAP(neighbor, *sn0, *sn );
 		NULLIFY(basis_s,sn0->basis);
 		sn0->basis = tt_basisp;
@@ -355,7 +353,7 @@ int out_of_flat(simplex *root, point p) {
 	root->neigh[cdim-1].vert = root->peak.vert;
 	NULLIFY(basis_s,root->neigh[cdim-1].basis);
 	get_basis_sede(root);
-	if (vd && root->neigh[0].vert == infinity) return 1;
+	if (vd && root->neigh[0].vert == hull_infinity) return 1;
 	reduce(&p_neigh.basis,p,root,cdim);
 	if (p_neigh.basis->sqa != 0) return 1;
 	cdim--;
@@ -387,7 +385,7 @@ int check_perps(simplex *s) {
 	tt = s->neigh[0].vert;
 	for (i=1;i<cdim;i++) {
 		y = s->neigh[i].vert;
-		if (vd && y==infinity) memcpy(b, infinity_basis, basis_s_size);
+		if (vd && y==hull_infinity) memcpy(b, infinity_basis, basis_s_size);
 		else {trans(z,y,tt); lift(z,s);}
 		if (s->normal && cosangle_sq(b,s->normal)>b_err_min_sq) {DEBS(0)
 			DEB(0,bad normal) DEBEXP(0,i) DEBEXP(0,dd)
@@ -429,7 +427,7 @@ void get_normal_sede(simplex *s) {
 		for (i=cdim+1,rn = ch_root->neigh+cdim-1; i; i--, rn--) {
 			for (j = 0; j<cdim && rn->vert != s->neigh[j].vert;j++);
 			if (j<cdim) continue;
-			if (rn->vert==infinity) {
+			if (rn->vert==hull_infinity) {
 				if (c[2] > -b_err_min) continue;
 			} else  if (!sees(rn->vert,s)) continue;
 			c[0] = -c[0]; c[1] = -c[1]; c[2] = -c[2];
@@ -471,7 +469,7 @@ int sees(site p, simplex *s) {
 	}
 	tt = s->neigh[0].vert;
 	if (vd) {
-		if (p==infinity) memcpy(b,infinity_basis,basis_s_size);
+		if (p==hull_infinity) memcpy(b,infinity_basis,basis_s_size);
 		else {trans(zz,p,tt); lift(zz,s);}
 	} else trans(zz,p,tt);
 	for (i=0;i<3;i++) {
@@ -509,7 +507,7 @@ double radsq(simplex *s) {
 
 	
 	for (i=0,sn=s->neigh;i<cdim;i++,sn++)
-		if (sn->vert == infinity) return Huge;
+		if (sn->vert == hull_infinity) return Huge;
 
 	if (!s->normal) get_normal_sede(s);
 
@@ -548,7 +546,7 @@ int alph_test(simplex *s, int i, void *alphap) {
 	sin = s->neigh+i;
 	nsees = 0;
 
-	for (k=0;k<cdim;k++) if (s->neigh[k].vert==infinity && k!=i) return 1;
+	for (k=0;k<cdim;k++) if (s->neigh[k].vert==hull_infinity && k!=i) return 1;
 	rs = radsq(s);
 	rsi = radsq(si);
 
@@ -558,7 +556,7 @@ int alph_test(simplex *s, int i, void *alphap) {
 	NULLIFY(basis_s, s->neigh[i].basis);
 	cdim--;
 	get_basis_sede(s);
-	reduce(&s->normal,infinity,s,cdim);
+	reduce(&s->normal,hull_infinity,s,cdim);
 	rsfi = radsq(s);
 
 	for (k=0;k<cdim;k++) if (si->neigh[k].simp==s) break;
@@ -581,7 +579,7 @@ int alph_test(simplex *s, int i, void *alphap) {
 
 simplex *conv_facetv(simplex *s, void *) {
 	int i;
-	for (i=0;i<cdim;i++) if (s->neigh[i].vert==infinity) {return s;}
+	for (i=0;i<cdim;i++) if (s->neigh[i].vert==hull_infinity) {return s;}
 	return NULL;
 }
 
@@ -592,7 +590,7 @@ simplex *mark_points(simplex *s, void *) {
 	neighbor *sn;
 
 	for  (i=0,sn=s->neigh;i<cdim;i++,sn++) {
-		if (sn->vert==infinity) continue;
+		if (sn->vert==hull_infinity) continue;
 		snum = site_num(sn->vert);
 		if (s->mark) mo[snum] = 1;
 		else mi[snum] = 1;
@@ -665,9 +663,9 @@ void vols(fg *f, Tree *t, basis_s* n, int depth) {
 		sn[depth-1].vert = t->key;
 		NULLIFY(basis_s,sn[depth-1].basis);
 		cdim = depth; get_basis_sede(s); cdim = tdim;
-		reduce(&nn, infinity, s, depth);
+		reduce(&nn, hull_infinity, s, depth);
 		nnv = nn->vecs;
-		if (t->key==infinity || f->dist==Huge || NEARZERO(nnv[rdim-1]))
+		if (t->key==hull_infinity || f->dist==Huge || NEARZERO(nnv[rdim-1]))
 			t->fgs->dist = Huge;
 		else
 			t->fgs->dist = Vec_dot_pdim(nnv,nnv)
@@ -751,7 +749,7 @@ simplex *build_convex_hull(gsitef *get_s, site_n *site_numm, short dim, short vd
 
 	root = NULL;
 	if (vd) {
-		p = infinity;
+		p = hull_infinity;
 		NEWLRC(basis_s, infinity_basis);
 		infinity_basis->vecs[2*rdim-1]
 			= infinity_basis->vecs[rdim-1]

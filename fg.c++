@@ -346,7 +346,7 @@ void visit_fg_i(   void (*v_fg)(Tree *, int, int),
 	assert(t->fgs);
 	if (t->fgs->mark!=vn) {
 		t->fgs->mark = vn;
-		if (t->key!=infinity && !mo[site_num(t->key)]) boundaryc = 0; 
+		if (t->key!=hull_infinity && !mo[site_num(t->key)]) boundaryc = 0;
 		v_fg(t,depth, boundaryc);
 		visit_fg_i(v_fg, t->fgs->facets,depth+1, vn, boundaryc);
 	}
@@ -368,7 +368,7 @@ int visit_fg_i_far(void (*v_fg)(Tree *, int),
 	assert(t->fgs);
 	if (t->fgs->mark!=vn) {
 		t->fgs->mark = vn;
-		nb = (t->key==infinity) || mo[site_num(t->key)];
+		nb = (t->key==hull_infinity) || mo[site_num(t->key)];
 		if (!nb && !visit_fg_i_far(v_fg, t->fgs->facets,depth+1,vn))
 			v_fg(t,depth);
 	}

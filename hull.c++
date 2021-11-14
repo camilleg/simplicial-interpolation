@@ -52,12 +52,12 @@ simplex *visit_triang_gen(simplex *s, visit_func *visit, test_func *test) {
 	static simplex **st;
 
 	vnum--;
-	if (!st) assert(st=(simplex**)malloc((ss+MAXDIM+1)*sizeof(simplex*)));
+	if (!st) st=(simplex**)malloc((ss+MAXDIM+1)*sizeof(simplex*));
 	if (s) push(s);
 	while (tms) {
 		if (tms>ss) {DEBEXP(-1,tms);
-			assert(st=(simplex**)realloc(st,
-				((ss+=ss)+MAXDIM+1)*sizeof(simplex*)));
+			st=(simplex**)realloc(st,
+				((ss+=ss)+MAXDIM+1)*sizeof(simplex*));
 		}
 		pop(t);
 		if (!t || t->visit == vnum) continue;
@@ -232,8 +232,8 @@ simplex *search(simplex *root) {
 		for (i=0,sn=root->neigh;i<cdim;i++,sn++) push(sn->simp);
 	while (tms) {
 		if (tms>ss)
-			assert(st=(simplex**)realloc(st,
-				((ss+=ss)+MAXDIM+1)*sizeof(simplex*)));
+			st=(simplex**)realloc(st,
+				((ss+=ss)+MAXDIM+1)*sizeof(simplex*));
 		pop(s);
 		if (s->visit == pnum) continue;
 		s->visit = pnum;

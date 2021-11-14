@@ -53,7 +53,7 @@ typedef point site;
 
 extern site p; 			/* the current site */
 
-extern Coord infinity[10];	/* point at infinity for Delaunay triang */
+extern Coord hull_infinity[10];	/* point at infinity for Delaunay triang */
 
 extern int
 	rdim,	/* region dimension: (max) number of sites specifying region */
@@ -206,8 +206,9 @@ Coord maxdist(int,point p1, point p2);
 
 /* from rand.c */
 
-extern double double_rand(void);
-extern void init_rand(long seed);
+double double_rand(void);
+void init_rand(long seed);
+
 
 /* from fg.c, for face graphs */
 

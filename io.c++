@@ -200,13 +200,6 @@ void vlist_out(point *v, int vdim, FILE *Fin, int) {
 }
 
 void off_out(point *v, int vdim, FILE *Fin, int amble) {
-#ifndef disabled
-	// todo: replace insecure tmpnam with mkstemp, as was done in hullmain.c++.
-	(void)v;
-	(void)vdim;
-	(void)Fin;
-	(void)amble;
-#else
 	static FILE *F, *G;
 	static FILE *OFFFILE;
 	static char offfilenam[L_tmpnam];
@@ -218,12 +211,14 @@ void off_out(point *v, int vdim, FILE *Fin, int amble) {
 	if (pdim!=3) { warning(-10, off apparently for 3d points only); return;}
 
 	if (amble==0) {
-		for (i=0;i<vdim;i++) if (v[i]==infinity) return;
+		for (i=0;i<vdim;i++) if (v[i]==hull_infinity) return;
 		fprintf(OFFFILE, "%d ", vdim);
 		for (j=0;j<vdim;j++) fprintf(OFFFILE, "%ld ", (site_num)(v[j]));
 		fprintf(OFFFILE,"\n");
 	} else if (amble==-1) {
-		OFFFILE = efopen(tmpnam(offfilenam), "w");
+		if (mkstemp(tmpfilenam) < 0)
+			panic("failed to make name for temporary file");
+		OFFFILE = efopen(tmpfilenam, "w");
 	} else {
 		fclose(OFFFILE);
 
@@ -253,7 +248,6 @@ void off_out(point *v, int vdim, FILE *Fin, int amble) {
 		while (fgets(buf, sizeof(buf), G)) fprintf(F, "%s", buf);
 		fclose(G);
 	}
-#endif
 }
 
 void mp_out(point *v, int vdim, FILE *Fin, int amble) {
@@ -267,7 +261,7 @@ void mp_out(point *v, int vdim, FILE *Fin, int amble) {
 	if (amble==0) {
 		int i;
 		if (!v) return;
-		for (i=0;i<vdim;i++) if (v[i]==infinity) {
+		for (i=0;i<vdim;i++) if (v[i]==hull_infinity) {
 			point t=v[i];
 			v[i]=v[vdim-1];
 			v[vdim-1] = t;
@@ -299,7 +293,7 @@ void ps_out(point *v, int vdim, FILE *Fin, int amble) {
 	if (amble==0) {
 		int i;
 		if (!v) return;
-		for (i=0;i<vdim;i++) if (v[i]==infinity) {
+		for (i=0;i<vdim;i++) if (v[i]==hull_infinity) {
 			point t=v[i];
 			v[i]=v[vdim-1];
 			v[vdim-1] = t;
@@ -346,7 +340,7 @@ void cpr_out(point *v, int vdim, FILE *Fin, int) {
 
 	if (pdim!=3) { warning(-10, cpr for 3d points only); return;}
 	
-	for (i=0;i<vdim;i++) if (v[i]==infinity) return;
+	for (i=0;i<vdim;i++) if (v[i]==hull_infinity) return;
 
 	fprintf(F, "t %G %G %G %G %G %G %G %G %G 3 128\n",
 		v[0][0]/mult_up,v[0][1]/mult_up,v[0][2]/mult_up,
