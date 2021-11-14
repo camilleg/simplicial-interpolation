@@ -1,9 +1,9 @@
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <limits>
-#include <sys/time.h>
 
 #include "ga.h"
 
@@ -244,13 +244,9 @@ void* GA(
   double tMaxSec
   )
 {
-  struct timeval tStart, tNow;
+  using namespace std::chrono;
+  const auto tQuit = system_clock::now() + microseconds(long(tMaxSec * 1e6));
 
-#ifdef __GNUC__
-  gettimeofday(&tStart, 0);
-#else
-  gettimeofday(&tStart);
-#endif
   cbMember = cbMemberArg;
   pbBuf = NULL;
   if (cbMember % sizeof(long) != 0)
@@ -297,13 +293,7 @@ void* GA(
 #endif
       memcpy(pbBuf, PvFromI(iBestMember), cbMember);
       }
-#ifdef __GNUC__
-    gettimeofday(&tNow, 0);
-#else
-    gettimeofday(&tNow);
-#endif
-    if (double(tNow.tv_sec - tStart.tv_sec) +
-        double(tNow.tv_usec - tStart.tv_usec)/1e6 > tMaxSec)
+    if (system_clock::now() > tQuit)
       {
 #ifdef NOISY
       printf("\ntimeout\n");
@@ -312,5 +302,5 @@ void* GA(
       }
     }
   FreePopulation();
-  return (void*)pbBuf;
+  return pbBuf;
 }
