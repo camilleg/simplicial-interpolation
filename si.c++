@@ -260,7 +260,7 @@ bool init()
     }
 
   // Compute centroids of true simplices, and of the true simplices which are the core of the ray-simplices.
-  vertex* viCentroid = new vertex[csiAll];
+  vertex viCentroid[csiAll];
   for (i=0; i<csiAll; ++i)
     {
     vertex& v = viCentroid[i];
@@ -268,28 +268,23 @@ bool init()
     // Accumulate into v the centroid of s.
     for (int j=0; j<d; ++j)
       {
-      // Accumulate into the j'th coord of v, the j'th coord of the centroid of s.
-      // By adding the j'th coords of each vertex of s.
-      double& t = v[j];
-      t = 0.;
+      // Into the j'th coord of v, the centroid of s,
+      // accumulate the j'th coord of each vertex of s.
+      v[j] = 0.0;
       for (int j1=0; j1<d+1; ++j1)
 	{
 	const int iVertex = s[j1];
 	const vertex& v1 = iVertex<0 ? qC : qi[iVertex];
-	t += v1[j];
+	v[j] += v1[j];
 	}
-      t /= d+1;
+      v[j] /= d+1;
       }
     }
 
   hi = new simplexHint[csiAll];
   for (i=0; i<csiAll; ++i)
-    {
     if (!precomputeBary(si[i], hi[i], viCentroid[i], qi, &qC, i>=csi))
       return false;
-    }
-
-  delete [] viCentroid;
   return true;
 }
 
@@ -361,29 +356,21 @@ e_vertex eval(const vertex& q)
   double w[d+1]; // q's coordinates w_j with respect to s.
   const int iS = d==2 ? searchEdahiro(q, w) : searchBruteForce(q, w);
   const simplex& s = si[iS];
-  int i, j;
-
-  //printf("Barycoords ");
-  //for (i=0; i<d+1; ++i)
-  //  printf("%g  ", w[i]);
-  //printf("\n");
 
 #ifdef TESTING
   // Verify that q == the point whose barycoords are w[] wrt s.
   vertex r;
-  for (j=0; j<d; ++j)
-    {
-    r[j] = 0.;
-    for (i=0; i<d+1; ++i)
-      {
+  for (auto j=0; j<d; ++j) {
+    r[j] = 0.0;
+    for (auto i=0; i<d+1; ++i) {
       const vertex& v = s[i] < 0 ? qC : qi[s[i]];
       r[j] += w[i] * v[j];
-      }
     }
-  // Now r is the reconstructed point.  How far is it from q?
-  // (i.e., how accurate were the barycentric coordinates w[]?
-  double dist = 0.;
-  for (j=0; j<d; ++j)
+  }
+  // The reconstructed point is r.  How far is it from q?
+  // (How accurate were the barycoords w[]?)
+  auto dist = 0.0;
+  for (auto j=0; j<d; ++j)
     dist += sq(r[j] - q[j]);
   dist = sqrt(dist);
   if (dist > 1e-8)
@@ -395,14 +382,14 @@ e_vertex eval(const vertex& q)
 
 #ifdef DATAVIZ
   iFound = iS;
-  for (j=0; j<d+1; ++j)
+  for (auto j=0; j<d+1; ++j)
     wFound[j] = w[j];
 #endif
 
   // Compute a weighted sum with weights w[] and vertices pi[s[]].
   e_vertex p = {0};
-  for (j=0; j<e; ++j)
-    for (i=0; i<d+1; ++i)
+  for (auto j=0; j<e; ++j)
+    for (auto i=0; i<d+1; ++i)
       p[j] += w[i] * pi[s[i]][j];
   return p;
 }
@@ -429,128 +416,158 @@ void evalAutomatic()
 }
 
 constexpr auto NaN = std::numeric_limits<double>::signaling_NaN();
-vertex vQ{NaN,NaN};
+vertex vQ{ NaN, NaN };
+e_vertex vP;
+constexpr auto margin = 0.15 * scale;
 
-void display()
-{
 #ifdef DATAVIZ
-  glClear(GL_COLOR_BUFFER_BIT);
-  int i, j;
+void drawChar(const vertex& v, char c) {
+  glRasterPos2f(v[0], v[1]);
+  glutBitmapCharacter(GLUT_BITMAP_8_BY_13, c);
+}
 
-  const bool fInside = iFound < csi;
-  const simplex& s = si[iFound];
+// Convert std::array to GLdouble*.
+void glVert2(const vertex& v) {
+  glVertex2d(v[0], v[1]);
+}
 
-  // Bounding simplex (i.e., triangle).
-  glBegin(GL_TRIANGLES);
-  if (fInside)
-    {
-    glColor3f(.2,0,.07);
-    for (j=0; j<=d; ++j)
-      {
-      const vertex& v = qi[s[j]];
-      glVertex2f(v[0], v[1]);
-      }
-    }
-  else
-    {
-    glColor3f(0,.15,0);
-    glVertex2f(qC[0], qC[1]);
-    vertex v = qi[s[0]];
-    v[0] += 100. * (v[0] - qC[0]);
-    v[1] += 100. * (v[1] - qC[1]);
-    glVertex2f(v[0], v[1]);
-    v = qi[s[1]];
-    v[0] += 100. * (v[0] - qC[0]);
-    v[1] += 100. * (v[1] - qC[1]);
-    glVertex2f(v[0], v[1]);
-    }
-  glEnd();
-
-  // Disc around each vertex of containing simplex.
-  // Disc's radius indicates weight (barycentric coordinate) of corresponding vertex.
-  glColor3f(.5,.5,.5);
-  for (i=0; i<=d; ++i)
-    {
-    const auto iVertex = s[i];
-    const auto& v = iVertex<0 ? qC : qi[iVertex];
-    const auto r = 0.07 * scale * sqrt(fabs(wFound[i]));
-    glPushMatrix();
-    glTranslatef(v[0], v[1], 0);
-    glScalef(r, r, 0);
-    glBegin(GL_POLYGON);
-    for (auto a = 0.0; a <= 2.0*M_PI; a += 0.05)
-      glVertex2f(cos(a), sin(a));
-    glEnd();
-    glPopMatrix();
-    }
-
-  // Triangulation mesh.
+void drawSimplices(bool fInside) {
   if (fInside)
     glColor3f(1,0,.4);
   else
     glColor3f(.3,0,.12);
-  for (i=0; i<csi; ++i)
-    {
-    const simplex& s = si[i];
+  for (auto i=0; i<csi; ++i) {
+    const auto& s = si[i];
     glBegin(GL_LINE_LOOP);
-    for (j=0; j<=d; ++j)
-      {
-      const vertex& v = qi[s[j]];
-      glVertex2f(v[0], v[1]);
-      }
+    for (auto j=0; j<=d; ++j)
+      glVert2(qi[s[j]]);
     glEnd();
-    }
+  }
+}
 
-  // Ray-simplices.
+void drawRaysimplices(bool fInside) {
   if (fInside)
     glColor3f(0,.35,0);
   else
     glColor3f(0,0.7,0);
-  for (i=csi; i<csiAll; ++i)
-    {
-    const simplex& s = si[i];
+  for (auto i=csi; i<csiAll; ++i) {
+    const auto& s = si[i];
     glBegin(GL_LINE_LOOP);
-      glVertex2f(qC[0], qC[1]);
-      const vertex& v = qi[s[0]]; glVertex2f(v[0], v[1]);
-      const vertex& w = qi[s[1]]; glVertex2f(w[0], w[1]);
+      glVert2(qC);
+      glVert2(qi[s[0]]);
+      glVert2(qi[s[1]]);
     glEnd();
+  }
+}
+
+void display()
+{
+  glClear(GL_COLOR_BUFFER_BIT);
+
+  // Mouse moved, thus assigning to vQ.
+  // GLUT can't report mouse position until then.
+  const bool fInited = !std::isnan(vQ[0]);
+
+  const bool fInside = iFound < csi;
+  const simplex& s = si[iFound];
+  // Draw layers, most to least hidden.
+
+  if (fInited) {
+    // Bounding simplex (i.e., triangle).
+    glBegin(GL_TRIANGLES);
+    if (fInside) {
+      glColor3f(.25,0,.08);
+      for (auto j=0; j<=d; ++j)
+	glVert2(qi[s[j]]);
+    } else {
+      glColor3f(0,.15,0);
+      glVert2(qC);
+      auto v = qi[s[0]];
+      v[0] += 100.0 * (v[0] - qC[0]);
+      v[1] += 100.0 * (v[1] - qC[1]);
+      glVert2(v);
+      v = qi[s[1]];
+      v[0] += 100.0 * (v[0] - qC[0]);
+      v[1] += 100.0 * (v[1] - qC[1]);
+      glVert2(v);
     }
+    glEnd();
+  }
 
-  glColor3f(1,1,1);
-  glRasterPos2f(qC[0], qC[1]);
-  glutBitmapCharacter(GLUT_BITMAP_8_BY_13, 'C');
+  // Bar graph of output values.
+  glBegin(GL_QUADS);
+  for (auto i=0; i<e; ++i) {
+    constexpr auto y0 = -0.5 * margin;
+    const auto y1 = vP[i];
+    const auto x0 = scale / e * i;
+    const auto x1 = scale / e * (i+0.6);
+    glColor3f(0.0, 0.0, 0.1); glVertex2d(x0, y0);
+    glColor3f(0.3, 0.3, 0.7); glVertex2d(x0, y1);
+    glColor3f(0.3, 0.3, 0.7); glVertex2d(x1, y1);
+    glColor3f(0.0, 0.0, 0.1); glVertex2d(x1, y0);
+  }
+  glEnd();
 
-#ifdef TESTING
-  // Reconstructed point.
-  glColor3f(1,.2,.2);
-  glRasterPos2f(rFound[0], rFound[1]);
-  glutBitmapCharacter(GLUT_BITMAP_8_BY_13, 'R');
-#endif
-
-  if (!std::isnan(vQ[0]))
-    {
-    // Query point.
-    glColor3f(1,1,1);
-    glRasterPos2f(vQ[0], vQ[1]);
-    glutBitmapCharacter(GLUT_BITMAP_8_BY_13, 'q');
+  if (fInited) {
+    // Disc around each vertex of containing simplex.
+    // Disc's radius indicates weight (barycentric coordinate) of corresponding vertex.
+    for (auto i=0; i<=d; ++i) {
+      const auto iVertex = s[i];
+      const auto& v = iVertex<0 ? qC : qi[iVertex];
+      const auto r0 = 0.07 * scale;
+      const auto r  = 0.07 * scale * sqrt(fabs(wFound[i]));
+      glPushMatrix();
+      glTranslatef(v[0], v[1], 0);
+      glColor3f(0.5,0.5,0.5);
+      glScalef(r, r, 0);
+      // This isn't worth precomputing or moving to a display list.
+      glBegin(GL_POLYGON);
+	for (auto a = 0.0; a <= 2.0*M_PI; a += 0.05)
+	  glVertex2f(cos(a), sin(a));
+      glEnd();
+      glColor3f(0.2,0.2,0.2);
+      glScalef(r0/r, r0/r, 0);
+      glBegin(GL_LINE_LOOP);
+	for (auto a = 0.0; a <= 2.0*M_PI; a += 0.05)
+	  glVertex2f(cos(a), sin(a));
+      glEnd();
+      glPopMatrix();
     }
+  }
+
+  // Color the hull correctly.
+  if (fInside) {
+    drawRaysimplices(fInside);
+    drawSimplices(fInside);
+  } else {
+    drawSimplices(fInside);
+    drawRaysimplices(fInside);
+  }
 
   // Vertices.
   glColor3f(1,1,0);
-  for (i=0; i<cPoint; ++i)
-    {
-    glRasterPos2f(qi[i][0], qi[i][1]);
-    glutBitmapCharacter(GLUT_BITMAP_8_BY_13, '0' + i);
-    }
+  for (auto i=0; i<cPoint; ++i)
+    drawChar(qi[i], '0' + i);
+
+  glColor3f(1,1,1);
+  drawChar(qC, 'C');
+
+  if (fInited) {
+#ifdef TESTING
+    // Reconstructed point.
+    glColor3f(1,.2,.2);
+    drawChar(rFound, 'R');
+#endif
+    // Query point.
+    glColor3f(1,1,1);
+    drawChar(vQ, 'q');
+  }
 
   glutSwapBuffers();
-#endif
 }
 
 int xSize = 700;
 int ySize = 700;
-
-const auto margin = 0.15 * scale;
 
 inline void XYFromMouse(double& x, double& y, int xM, int yM)
 {
@@ -561,7 +578,7 @@ inline void XYFromMouse(double& x, double& y, int xM, int yM)
 void mouse_hover(int x, int y)
 {
   XYFromMouse(vQ[0], vQ[1], x, y);
-  (void)eval(vQ);
+  vP = eval(vQ);
 }
 
 #ifdef MUST_HOLD_DOWN_MOUSE_BUTTON
@@ -624,15 +641,16 @@ void evalInteractive(int argc, char** argv)
   glutSwapBuffers();
   glutMainLoop(); // never returns
 }
+#endif
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
   if (!init())
     return -1;
-#if 0
-  evalAutomatic();
-#else
+#ifdef DATAVIZ
   evalInteractive(argc, argv);
+#else
+  evalAutomatic();
 #endif
   terminate();
   return 0;
