@@ -11,7 +11,13 @@ http://cm.bell-labs.com/who/clarkson.
 
 _______________________________________________________________________________
 
-( These are the components of Hull 1.0 used here:
+(
+Ken has moved from Bell Labs.  Reach him now at:
+klclarks@us.ibm.com
+http://researcher.watson.ibm.com/researcher/view.php?person=us-klclarks
+https://en.wikipedia.org/wiki/Kenneth_L._Clarkson
+
+The components of Hull 1.0 used here are:
     README.hull
     Makefile
     ch.c++
@@ -24,7 +30,6 @@ _______________________________________________________________________________
     points.h
     pointsites.h
     rand.c++
-    rsites.c++
     stormacs.h
 
   - Camille Goudeseune.
