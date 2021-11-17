@@ -105,12 +105,12 @@ simplex* readSimplices(const char* szFile, int& count, int& countAll)
 
 vertex qC{0}; // Constructed common point of the ray-simplices.
 e_vertex pC{0}; // What qC maps to.
-vertex* qi = NULL;
-e_vertex* pi = NULL;
-simplex* si = NULL;
-simplexHint* hi = NULL;
-int csi = 0;
-int csiAll = 0;
+vertex* qi = nullptr;
+e_vertex* pi = nullptr;
+simplex* si = nullptr;
+simplexHint* hi = nullptr;
+auto csi = 0;
+auto csiAll = 0;
 
 bool dump_qi()
 {
@@ -234,7 +234,7 @@ bool init()
   vertex viCentroid[csiAll];
   for (auto i=0; i<csiAll; ++i)
     {
-    vertex& v = viCentroid[i];
+    auto& v = viCentroid[i];
     const simplex& s = si[i];
     // Accumulate into v the centroid of s.
     for (auto j=0; j<d; ++j)
@@ -264,7 +264,7 @@ void terminate()
   delete [] hi;
 }
 
-// Return which member of the array of simplices si[] contains q.
+// Return which simplex in si[] contains q.
 // Fill w[0 to d+1] with q's barycentric coordinates w.r.t. that simplex.
 
 int searchRaySimplices(const vertex& q, double* w)
@@ -279,20 +279,22 @@ int searchRaySimplices(const vertex& q, double* w)
 
 int searchBruteForce(const vertex& q, double* w)
 {
-  // Compute q's bary-coords w.r.t. each simplex s.
+  // Compute q's bary-coords w.r.t. each simplex in si[].
   // If one has coordinates all nonnegative, return that one.
-
-  for (int i=0; i<csi; ++i)
+  for (auto i=0; i<csi; ++i)
     if (computeBary(hi[i], q, w))
       return i;
+  // q wasn't in any simplex, so try the ray-simplices.
   return searchRaySimplices(q, w);
 }
 
 int searchEdahiro(const vertex& q, double* w)
 {
-  // Edahiro's algorithm handles only the case d==2.
-
-  const int i = Edahiro_RegionFromPoint(q[0], q[1]);
+  if (d != 2) {
+    printf("internal error: edahiro needs d==2.\n");
+    exit(1);
+  }
+  const auto i = Edahiro_RegionFromPoint(q[0], q[1]);
   if (i >= 0)
     {
     if (i >= csi)
@@ -307,10 +309,22 @@ int searchEdahiro(const vertex& q, double* w)
       }
     return i;
     }
+  // q wasn't in any simplex, so try the ray-simplices.
   return searchRaySimplices(q, w);
 }
 
-#define DATAVIZ // For evalInteractive().
+int findSimplex(const vertex& q, double* w) {
+#ifdef TESTING
+  const int iS = searchBruteForce(q, w);
+  if (d == 2 && searchEdahiro(q, w) != iS)
+    printf("searchEdahiro and searchBruteForce disagree\n");
+  return iS;
+#else
+  return d==2 ? searchEdahiro(q, w) : searchBruteForce(q, w);
+#endif
+}
+
+#define DATAVIZ
 #ifdef DATAVIZ
 int iFound = 0;
 double wFound[d+1] = {0};
@@ -323,7 +337,7 @@ e_vertex eval(const vertex& q)
   // Find which simplex s contains q.
 
   double w[d+1]; // q's coordinates w_j with respect to s.
-  const int iS = d==2 ? searchEdahiro(q, w) : searchBruteForce(q, w);
+  const int iS = findSimplex(q, w);
   const simplex& s = si[iS];
 
 #ifdef TESTING
@@ -352,7 +366,7 @@ e_vertex eval(const vertex& q)
     wFound[j] = w[j];
 #endif
 
-  // Compute a weighted sum with weights w[] and vertices pi[s[]].
+  // Sum with weights w[] and vertices pi[s[]].
   e_vertex p{0};
   for (auto j=0; j<e; ++j)
     for (auto i=0; i<d+1; ++i)
@@ -459,7 +473,7 @@ void display()
     // Disc's radius indicates weight (barycentric coordinate) of corresponding vertex.
     for (auto i=0; i<=d; ++i) {
       const auto iVertex = s[i];
-      const auto& v = iVertex<0 ? qC : qi[iVertex];
+      const auto& v = iVertex < 0 ? qC : qi[iVertex];
       const auto r0 = 0.07 * scale;
       const auto r  = 0.07 * scale * sqrt(fabs(wFound[i]));
       glPushMatrix();
