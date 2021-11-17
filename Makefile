@@ -6,15 +6,19 @@ ifeq ($(UNAME_S),Darwin)
   # For OS X 10.3.9:
   # CC = g++
   # CFLAGS += -I/usr/X11R6/include -I/System/Library/Frameworks/GLUT.framework/Versions/A/Headers
+LIBS :=
 else
   CC = g++
-  GL_LDFLAGS = -lglut -lGLU -lGL
+  LIBS := -lglut -lGLU -lGL
 endif
 
 CFLAGS := -std=c++17 -O3 -W -Wall -Werror -Weffc++
 ifeq ($(UNAME_S),Darwin)
   CFLAGS += -DGL_SILENCE_DEPRECATION # MacOS 11.2
 endif
+
+# Optional file containing debugging options for CFLAGS.
+-include Rules.debug
 
 OBJS_HULL = hull.o ch.o io.o rand.o pointops.o fg.o hullmain.o
 OBJS_SI = si.o sammon.o ga.o gacli.o bary.o edahiro.o
@@ -34,10 +38,10 @@ $(OBJS_SI): $(HDRS_SI)
 	$(CC) -c $(CFLAGS) $<
 
 hull: $(OBJS_HULL)
-	$(CC) -o $@ $^ -lm
+	$(CC) -o $@ $^ $(LIBS)
 
 si: $(OBJS_SI)
-	$(CC) -o $@ $^ $(GL_LDFLAGS) -lm
+	$(CC) -o $@ $^ $(LIBS)
 
 clean:
 	-rm -f $(OBJS_HULL) $(OBJS_SI) $(EXES)
