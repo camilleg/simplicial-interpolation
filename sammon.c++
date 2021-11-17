@@ -9,15 +9,12 @@
 
 vertex* computeSammon(const e_vertex* pi, const int cpt, const double scalar)
 {
-  double* rgzTarget = new double[triangularNumber(cpt - 1)];
-  double* rgzBest = new double[cpt*d];
-  double* rgz = new double[cpt*d];
-
   // Modification of the published algorithm:  store the squares of
   // the distances, instead of the distances themselves.
   // Avoids computing a zillion square roots.
 
   // Compute target values for distance matrix.
+  double rgzTarget[triangularNumber(cpt - 1)];
   int i, j, k=0;
   for (i=0; i<cpt-1; ++i)
   for (j=i+1; j<cpt; ++j, ++k)
@@ -28,13 +25,15 @@ vertex* computeSammon(const e_vertex* pi, const int cpt, const double scalar)
     }
 
   // Run Sammon's Mapping crun times, and keep the best run so far.
+  double rgz[cpt*d];
+  double rgzBest[cpt*d];
   const int crun = 1000;
   int runLastGood = -1;
   double errorMin = std::numeric_limits<double>::max();
   for (int run=0; run<crun; ++run)
     {
     if (run - runLastGood > crun/4)
-      // Abort... haven't improved in quite a while.
+      // Haven't improved in quite a while.
       break;
 
     // Build initial configuration of points.
@@ -109,13 +108,10 @@ vertex* computeSammon(const e_vertex* pi, const int cpt, const double scalar)
 	}
       }
     }
-  delete [] rgz;
-  delete [] rgzTarget;
   // printf("Sammon's mapping: best error is %.3f\n", sqrt(errorMin));
   vertex* result = new vertex[cpt];
   for (i=0; i<cpt; ++i)
   for (k=0; k<d; ++k)
     result[i][k] = rgzBest[i*d + k];
-  delete [] rgzBest;
   return result;
 }
