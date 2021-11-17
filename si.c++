@@ -23,39 +23,6 @@ int cPoint = -1;
 const char* szFileQi = "/tmp/.x";
 const char* szFileSi = "/tmp/.simplicial_interpolation.txt";
 
-// Read d-vertices from szFile into an array.
-// Caller is responsible for freeing memory.
-vertex* readVertices(const char* szFile, int& count)
-{
-  // Count how many lines.
-  count = 0;
-  FILE* pf = fopen(szFile, "r");
-  if (!pf)
-    return NULL;
-  char buf[1000];
-  while (fgets(buf, sizeof(buf)-1, pf))
-    ++count;
-  rewind(pf);
-  vertex* v = new vertex[count];
-  for (int i=0; i<count; ++i)
-    {
-    if (fgets(buf, sizeof(buf)-1, pf) == NULL)
-      fprintf(stderr, "Failed to read a line from '%s'.\n", szFile);
-    char* pch = buf;
-    char* pchNext;
-    for (int j=0; j<d; ++j)
-      {
-      v[i][j] = strtod(pch, &pchNext);
-      if (pchNext == pch)
-        printf("Unexpected string \"%s\" while reading %dth float from %s\n",
-	  pch, j, szFile);
-      pch = pchNext;
-      }
-    }
-  fclose(pf);
-  return v;
-}
-
 // Read d-simplices from szFile into an array.
 // count stores how many true simplices are read (no -1 vertex).
 // countAll stores that, plus how many ray-simplices are read.
@@ -136,7 +103,8 @@ simplex* readSimplices(const char* szFile, int& count, int& countAll)
   return sRet;
 }
 
-vertex qC; // constructed common point of the ray-simplices
+vertex qC{0}; // Constructed common point of the ray-simplices.
+e_vertex pC{0}; // What qC maps to.
 vertex* qi = NULL;
 e_vertex* pi = NULL;
 simplex* si = NULL;
@@ -160,6 +128,7 @@ bool dump_qi()
   return true;
 }
 
+// Scale the inputs to the hull algorithm, which uses exact integer arithmetic.
 // Outside [1e2, 1e7], ch.c++ suffers degeneracies and overshoots.
 constexpr auto scale = 1e6;
 
@@ -175,6 +144,8 @@ void randomSites_e(e_vertex* dst, int n) {
   for (auto i=0; i<e; ++i)
     dst[j][i] = scale * erand48(x);
 }
+
+e_vertex eval(const vertex&);
 
 bool init()
 {
@@ -242,9 +213,8 @@ bool init()
 
   // Precompute some things to speed up eval().
 
-  // Compute qC, centroid of bounding rectangle of all simplices.
-  int i;
-  for (i=0; i<d; ++i)
+  // Calculate qC, the centroid of the bounding box of all simplices.
+  for (auto i=0; i<d; ++i)
     {
     auto zMin = std::numeric_limits<double>::max();
     auto zMax = -zMin;
@@ -259,32 +229,30 @@ bool init()
     qC[i] = (zMin + zMax) * .5;
     }
 
-  // Compute centroids of true simplices, and of the true simplices which are the core of the ray-simplices.
+  // Calculate the centroid of each true simplex,
+  // and of each true simplex that is the core of a ray-simplex.
   vertex viCentroid[csiAll];
-  for (i=0; i<csiAll; ++i)
+  for (auto i=0; i<csiAll; ++i)
     {
     vertex& v = viCentroid[i];
     const simplex& s = si[i];
     // Accumulate into v the centroid of s.
-    for (int j=0; j<d; ++j)
+    for (auto j=0; j<d; ++j)
       {
-      // Into the j'th coord of v, the centroid of s,
-      // accumulate the j'th coord of each vertex of s.
+      // Set the j'th coord of v, the centroid of s,
+      // to the mean of the j'th coords of s's vertices.
       v[j] = 0.0;
-      for (int j1=0; j1<d+1; ++j1)
-	{
-	const int iVertex = s[j1];
-	const vertex& v1 = iVertex<0 ? qC : qi[iVertex];
-	v[j] += v1[j];
-	}
+      for (auto j1=0; j1<d+1; ++j1)
+	v[j] += (s[j1] < 0 ? qC : qi[s[j1]])[j];
       v[j] /= d+1;
       }
     }
 
   hi = new simplexHint[csiAll];
-  for (i=0; i<csiAll; ++i)
+  for (auto i=0; i<csiAll; ++i)
     if (!precomputeBary(si[i], hi[i], viCentroid[i], qi, &qC, i>=csi))
       return false;
+  pC = eval(qC);
   return true;
 }
 
@@ -293,6 +261,7 @@ void terminate()
   delete [] pi;
   delete [] qi;
   delete [] si;
+  delete [] hi;
 }
 
 // Return which member of the array of simplices si[] contains q.
@@ -345,7 +314,7 @@ int searchEdahiro(const vertex& q, double* w)
 #ifdef DATAVIZ
 int iFound = 0;
 double wFound[d+1] = {0};
-vertex rFound;
+vertex rFound{0};
 #endif
 
 // Map a d-vertex to an e-vertex.
@@ -359,13 +328,10 @@ e_vertex eval(const vertex& q)
 
 #ifdef TESTING
   // Verify that q == the point whose barycoords are w[] wrt s.
-  vertex r;
+  vertex r{0};
   for (auto j=0; j<d; ++j) {
-    r[j] = 0.0;
-    for (auto i=0; i<d+1; ++i) {
-      const vertex& v = s[i] < 0 ? qC : qi[s[i]];
-      r[j] += w[i] * v[j];
-    }
+    for (auto i=0; i<d+1; ++i)
+      r[j] += w[i] * (s[i] < 0 ? qC : qi[s[i]])[j];
   }
   // The reconstructed point is r.  How far is it from q?
   // (How accurate were the barycoords w[]?)
@@ -387,40 +353,20 @@ e_vertex eval(const vertex& q)
 #endif
 
   // Compute a weighted sum with weights w[] and vertices pi[s[]].
-  e_vertex p = {0};
+  e_vertex p{0};
   for (auto j=0; j<e; ++j)
     for (auto i=0; i<d+1; ++i)
-      p[j] += w[i] * pi[s[i]][j];
+      p[j] += w[i] * (s[i] < 0 ? pC : pi[s[i]])[j];
   return p;
 }
 
-void evalAutomatic()
-{
-  // Exercise the evaluation function eval().
-  // Compiled -O2 or -O3 for a 1GHz Pentium III,
-  // this does one test in 310 usec or 3200 tests per second for e=42, d=7.
-  // For d=3, 100 usec/test or 10000 tests/sec.
-  // For d=2, 66 usec/test or 15000 tests/sec.
-
-  constexpr auto ctest = 20; // 100000 for timing tests
-  vertex qtest[ctest];
-  randomSites_d(qtest, ctest);
-  for (int i=0; i<ctest; ++i)
-    {
-    printf("eval %d/%d\n", i, ctest);
-    const auto q = qtest[i];
-    dump_d("query: ", q);
-    const auto p = eval(q);
-    dump_e("result: ", p);
-    }
-}
+#ifdef DATAVIZ
 
 constexpr auto NaN = std::numeric_limits<double>::signaling_NaN();
-vertex vQ{ NaN, NaN };
-e_vertex vP;
+vertex vQ{NaN, NaN};
+e_vertex vP{0};
 constexpr auto margin = 0.15 * scale;
 
-#ifdef DATAVIZ
 void drawChar(const vertex& v, char c) {
   glRasterPos2f(v[0], v[1]);
   glutBitmapCharacter(GLUT_BITMAP_8_BY_13, c);
@@ -640,6 +586,29 @@ void evalInteractive(int argc, char** argv)
   glClear(GL_COLOR_BUFFER_BIT);
   glutSwapBuffers();
   glutMainLoop(); // never returns
+}
+
+#else
+
+void evalAutomatic()
+{
+  // Exercise the evaluation function eval().
+  // Compiled -O2 or -O3 for a 1GHz Pentium III,
+  // this does one test in 310 usec or 3200 tests per second for e=42, d=7.
+  // For d=3, 100 usec/test or 10000 tests/sec.
+  // For d=2, 66 usec/test or 15000 tests/sec.
+
+  constexpr auto ctest = 20; // 100000 for timing tests
+  vertex qtest[ctest];
+  randomSites_d(qtest, ctest);
+  for (int i=0; i<ctest; ++i)
+    {
+    printf("eval %d/%d\n", i, ctest);
+    const auto q = qtest[i];
+    dump_d("query: ", q);
+    const auto p = eval(q);
+    dump_e("result: ", p);
+    }
 }
 #endif
 
