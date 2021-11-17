@@ -21,20 +21,12 @@ endif
 
 OBJS_HULL = hull.o ch.o io.o rand.o pointops.o fg.o hullmain.o
 OBJS_SI = si.o sammon.o ga.o gacli.o bary.o edahiro.o
-
-HDRS_HULL = hull.h points.h pointsites.h stormacs.h
-HDRS_SI = si.h sammon.h ga.h gacli.h bary.h util.h edahiro.h
+OBJS = $(OBJS_SI) $(OBJS_HULL)
 
 EXES = hull si
 
 all: $(EXES)
 	./si
-
-$(OBJS_HULL): $(HDRS_HULL)
-$(OBJS_SI): $(HDRS_SI)
-
-%.o: %.c++
-	$(CC) -c $(CFLAGS) $<
 
 hull: $(OBJS_HULL)
 	$(CC) -o $@ $^ $(LIBS)
@@ -43,6 +35,14 @@ si: $(OBJS_SI)
 	$(CC) -o $@ $^ $(LIBS)
 
 clean:
-	-rm -f $(OBJS_HULL) $(OBJS_SI) $(EXES)
+	-rm -rf $(EXES) $(OBJS_HULL) $(OBJS_SI) .depend
+
+DEPENDFLAGS = -MMD -MT $@ -MF $(patsubst %.o,.depend/%.d,$@)
+%.o: %.c++
+	@mkdir -p .depend
+	$(CC) -c $(CFLAGS) $(DEPENDFLAGS) $<
+
+# .depend/*.d is built by %.o:%.c++.
+-include $(patsubst %.o,.depend/%.d,$(OBJS))
 
 .PHONY: all clean
