@@ -2,11 +2,10 @@ MAKEFLAGS += --jobs=99
 UNAME_S := $(shell sh -c 'uname -s 2>/dev/null')
 ifeq ($(UNAME_S),Darwin)
   CC = clang++
-  GL_LDFLAGS = -framework GLUT -framework OpenGL
   # For OS X 10.3.9:
   # CC = g++
   # CFLAGS += -I/usr/X11R6/include -I/System/Library/Frameworks/GLUT.framework/Versions/A/Headers
-LIBS :=
+  LIBS := -framework GLUT -framework OpenGL
 else
   CC = g++
   LIBS := -lglut -lGLU -lGL
@@ -14,7 +13,7 @@ endif
 
 CFLAGS := -std=c++17 -O3 -W -Wall -Werror -Weffc++
 ifeq ($(UNAME_S),Darwin)
-  CFLAGS += -DGL_SILENCE_DEPRECATION # MacOS 11.2
+  CFLAGS += -DGL_SILENCE_DEPRECATION # macOS 11.2
 endif
 
 # Optional file containing debugging options for CFLAGS.
