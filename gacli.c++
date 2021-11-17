@@ -1,6 +1,7 @@
 // Approximate a solution with a genetic algorithm.
 // Then relax to the local maximum that the GA was approaching.
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib> // random()
 #include <limits>
@@ -143,7 +144,7 @@ void MutateRandom(void* pv, long cIter)
   short* ps = ((Member*)pv)->rgl;
   for (auto i=0; i<cpt*cdimDst; ++i) {
     // Are all cbit bits of the mask, starting at the ibit'th, zero?
-    if ((lMask & (((1 << cbit) - 1) << ibit)) == 0)
+    if ((lMask & (long((1 << cbit) - 1) << ibit)) == 0)
       ps[i] += ((random() & sHuge) - sHuge/2) / denom;
     // Try next cbit bits next time.
     if ((ibit += cbit) >= 8 * int(sizeof(long)) - cbit)
