@@ -19,9 +19,10 @@ inline void dump_e(const char* sz, const e_vertex& v) { cout << sz; for (auto i=
 
 extern vertex* qi; // for simplex::dump()
 
-// A simplex's x[]'s are indices into the vertices qi[] (or pi[]);
-// -1 indicates qC (or its image pC), the common center point of the ray-simplices.
-struct simplex
+// The x[]'s are indices into the vertices qi[];
+// -1 indicates qC, the common center point of the ray-simplices.
+// Stored in si[].
+struct d_simplex
   {
   int x[d+1];
   int& operator[](int i) { return x[i]; }

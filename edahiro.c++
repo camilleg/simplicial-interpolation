@@ -574,7 +574,7 @@ inline int Tweak(const int ir)
 // Zero-based, not 1-based.
 // Permuting of points so they are sorted by y-coordinate.
 
-bool Edahiro_Init(const int cpt, const vertex* qi, const int csi, const simplex* si)
+bool Edahiro_Init(const int cpt, const vertex* qi, const int csi, const d_simplex* si)
 {
   // Read input file argv[1] from output of ./bin/hull
   // nv, x's and y's, ntri, itri's.

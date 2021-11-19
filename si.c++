@@ -9,6 +9,7 @@
 #include "bary.h"
 #include "edahiro.h"
 #include "gacli.h"
+#include "hull.h"
 #include "sammon.h"
 
 #ifdef __APPLE__
@@ -28,7 +29,7 @@ const char* szFileSi = "/tmp/.simplicial_interpolation.txt";
 // countAll stores that, plus how many ray-simplices are read.
 // True simplices precede ray-simplices in the returned array.
 // Caller is responsible for freeing memory.
-simplex* readSimplices(const char* szFile, int& count, int& countAll)
+d_simplex* readSimplices(const char* szFile, int& count, int& countAll)
 {
   // Count how many lines.
   count = 0;
@@ -39,14 +40,14 @@ simplex* readSimplices(const char* szFile, int& count, int& countAll)
   // First pass:  count lines.
   while (fgets(buf, sizeof(buf)-1, pf))
     ++countAll;
-  simplex* sRet = new simplex[countAll];
+  d_simplex* sRet = new d_simplex[countAll];
 
   // Second pass:  collect true simplices.
   rewind(pf);
   int i1 = 0;
   for (int i=0; i<countAll; ++i)
     {
-    simplex& s = sRet[i1];
+    d_simplex& s = sRet[i1];
     if (fgets(buf, sizeof(buf)-1, pf) == NULL)
       fprintf(stderr, "Failed to read a line from simplices file '%s'.\n", szFile);
     char* pch = buf;
@@ -72,7 +73,7 @@ simplex* readSimplices(const char* szFile, int& count, int& countAll)
   rewind(pf);
   for (int i=0; i<countAll; ++i)
     {
-    simplex& s = sRet[i1];
+    d_simplex& s = sRet[i1];
     if (fgets(buf, sizeof(buf)-1, pf) == NULL)
       fprintf(stderr, "Failed to read a ray-simplex line from file '%s'.\n", szFile);
     char* pch = buf;
@@ -107,7 +108,7 @@ vertex qC{0}; // Constructed common point of the ray-simplices.
 e_vertex pC{0}; // What qC maps to.
 vertex* qi = nullptr;
 e_vertex* pi = nullptr;
-simplex* si = nullptr;
+d_simplex* si = nullptr;
 simplexHint* hi = nullptr;
 auto csi = 0;
 auto csiAll = 0;
@@ -235,7 +236,7 @@ bool init()
   for (auto i=0; i<csiAll; ++i)
     {
     auto& v = viCentroid[i];
-    const simplex& s = si[i];
+    const d_simplex& s = si[i];
     // Accumulate into v the centroid of s.
     for (auto j=0; j<d; ++j)
       {
@@ -338,7 +339,7 @@ e_vertex eval(const vertex& q)
 
   double w[d+1]; // q's coordinates w_j with respect to s.
   const int iS = findSimplex(q, w);
-  const simplex& s = si[iS];
+  const d_simplex& s = si[iS];
 
 #ifdef TESTING
   // Verify that q == the point whose barycoords are w[] wrt s.
@@ -429,7 +430,7 @@ void display()
   const bool fInited = !std::isnan(vQ[0]);
 
   const bool fInside = iFound < csi;
-  const simplex& s = si[iFound];
+  const d_simplex& s = si[iFound];
   // Draw layers, most to least hidden.
 
   if (fInited) {

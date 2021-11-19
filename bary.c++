@@ -136,7 +136,7 @@ double determinant(const double* m, int n) {
   return det;
 }
 
-bool precomputeBary(const simplex& s, simplexHint& h, const vertex& centroid,
+bool precomputeBary(const d_simplex& s, simplexHint& h, const vertex& centroid,
   const vertex* rgv, const vertex* raysCentroid, [[maybe_unused]] bool fRaySimplex)
 {
   if (d <= 1)
