@@ -1,7 +1,6 @@
 // Constant-time lookup of which triangle contains a query point.
 //
 // Bucketing algorithm.  C++ translation of [Edahiro84]'s FORTRAN code.
-//
 // Names of identifiers are generally identical to the original FORTRAN.
 //
 // Vertices are numbered 1 to nv.
@@ -13,22 +12,17 @@
 
 #include "edahiro.h"
 
-class Vertex
-  {
-public:
+struct Vertex {
   double x, y;
   int ies; // index into rgedge, an edge incident to this vertex
-  };
+};
 
 const int cvertexMax = 8200;
 Vertex rgvertex[cvertexMax+1];
 int nv=1;
-#define cvertex nv
 #define cPt nv
 
-class Edge
-  {
-public:
+struct Edge {
   int ihead, itail; // ivertex's
   int lface, rface;
   int pnext, mnext; // iedges's: ccw-neighbor edges incident to ihead, itail
@@ -37,22 +31,18 @@ public:
   static constexpr auto NaN = std::numeric_limits<double>::signaling_NaN();
 
   Edge(): ihead(-1), itail(-1), lface(-1), rface(-1), pnext(-1), mnext(-1), angle(NaN), negangle(NaN) {}
-  };
+};
 
-class Region
-  {
-public:
+struct Region {
   int i1, i2, i3; // ipt's (our regions are only triangular).
-  };
+};
 const int cregionMax = 1000; // 350*250?
 Region rgregion[cregionMax+2];
 int nr = 1;
-#define cregion nr
 
 const int cedgeMax = 12300;
 Edge rgedge[cedgeMax+1];
 int ne=1;
-#define cedge ne
 
 inline double  vx(const int i) { return rgvertex[i].x; }
 inline double  vy(const int i) { return rgvertex[i].y; }
@@ -78,7 +68,6 @@ int nod[8201];
 int face[351][251];
 int edge[12301][2]; // Doubly linked list of edges.  [0] is prev, [1] is next.
 
-
 double xmin = 0.;
 double ymin = 0.;
 double xminOrig = 0.;
@@ -91,18 +80,18 @@ double ydOrig = 0.;
 int n1 = 0; // number of buckets
 int n2 = 0;
 
-void Preprocess()
+bool Preprocess()
 {
   int i;
   int nheh = 0;
   int nhev = 0;
 
   // Compute widths of the bucketed space, xd and yd.
-
   double xmax = vx(1);
   double ymax = vy(1);
   xmin = xmax;
   ymin = ymax;
+  // Our caller Edahiro_Init verified that nv >= 3.
   for (i=2; i<=nv; i++)
     {
     if (vx(i) > xmax) xmax = vx(i);
@@ -112,11 +101,14 @@ void Preprocess()
     }
   xdOrig = xd = xmax - xmin;
   ydOrig = yd = ymax - ymin;
+  if (xd < 1.0 || yd < 1.0) {
+    fprintf(stderr, "Preprocess failed: inputs too similar.\n");
+    return false;
+  }
   xminOrig = xmin;
   yminOrig = ymin;
 
   // Compute Sx and Sy (vnx and vny, respectively).
-
   double vnx = 0.;
   double vny = 0.;
   for (i=1; i<=ne; i++)
@@ -160,36 +152,30 @@ void Preprocess()
   yd /= (n2 * 4.);
   xmin -= xd;
   ymin -= yd;
-
   xd *= 4. + 2./n1;
   yd *= 4. + 2./n2;
 
   // Zero the arrays.
-
-  {
-  for (int iy=1; iy<=n2; iy++)
-    {
+  for (int iy=1; iy<=n2; iy++) {
     face[1][iy] = 0;
-    for (int ix=1; ix<=n1; ix++)
-      {
+    for (int ix=1; ix<=n1; ix++) {
       ihor[ix][iy] = 0;
       iver[ix][iy] = 0;
       inod[ix][iy] = 0;
-      }
     }
   }
 
   // Transform coordinate system.
 
+  fprintf(stderr, "ruh roh %f %f %f %f\n", xmin, ymin, xd, yd);
   for (i=1; i<=nv; i++)
     {
     rgvertex[i].x = (vx(i) - xmin) / xd + 1.;
     rgvertex[i].y = (vy(i) - ymin) / yd + 1.;
-    const int ix = int(vx(i));
-    const int iy = int(vy(i));
+    const int ix = vx(i);
+    const int iy = vy(i);
 
     // Construct Nij
-
     int i0 = inod[ix][iy];
     if (i0 == 0 || vy(i0) <= vy(i))
       {
@@ -366,6 +352,7 @@ L101:
 //  printf("\n\t");
 //  }
 //printf("\n");
+  return true;
 }
 
 int DoQuery(double x, double y)
@@ -574,81 +561,69 @@ inline int Tweak(const int ir)
 // Zero-based, not 1-based.
 // Permuting of points so they are sorted by y-coordinate.
 
-bool Edahiro_Init(const int cpt, const vertex* qi, const int csi, const d_simplex* si)
+bool Edahiro_Init(int cpt, const vertex* qi, int csi, const d_simplex* si)
 {
-  // Read input file argv[1] from output of ./bin/hull
+  // Read the output of Hull algorithm.
   // nv, x's and y's, ntri, itri's.
-  // Stuff nv==cvertex, rgvertex, nr==cregion, rgregion.
-
-  int iv,jv,ie,je,ir;
+  // Stuff nv and rgvertex, nr and rgregion.
 
   nv = cpt;
-  if (nv < 3)
-    {
-    fprintf(stderr, "error: Edahiro_Init() needs at least 3 vertices.\n");
+  if (nv < 3) {
+    fprintf(stderr, "error: Edahiro_Init() needs at least 3 vertices, not %d.\n", nv);
     return false;
-    }
-  for (iv=1; iv<=nv; iv++)
-    {
-    rgvertex[iv].x = qi[iv-1][0];
-    rgvertex[iv].y = qi[iv-1][1];
-    }
+  }
   nr = csi;
-  if (nr < 1)
-    {
+  if (nr < 1) {
     fprintf(stderr, "error: Edahiro_Init() needs at least 1 region.\n");
     return false;
-    }
-  for (ir=1; ir<=nr; ir++)
-    {
+  }
+
+  for (auto iv=1; iv<=nv; ++iv) {
+    rgvertex[iv].x = qi[iv-1][0];
+    rgvertex[iv].y = qi[iv-1][1];
+  }
+  for (auto ir=1; ir<=nr; ++ir) {
     // Change indices from zero-based to one-based (FORTRAN-ism).
     rgregion[ir].i1 = si[ir-1][0] + 1;
     rgregion[ir].i2 = si[ir-1][1] + 1;
     rgregion[ir].i3 = si[ir-1][2] + 1;
-    }
+  }
 
   // Sort rgvertex[] by increasing y-coordinate.
   // (Bubble-sort for now.)
   // Adjust rgregion[].* to match.
   // For each swap in rgvertex, swap the rgregion[].i_'s with those values too.
-  {
-  for (iv=nv-2; iv>1; --iv)
-  for (jv=1; jv<iv; jv++)
-    if (rgvertex[jv].y > rgvertex[jv+1].y)
-      {
-      // Swap jv'th and jv+1'th members of rgvertex
+  for (auto iv=nv-2; iv>1; --iv)
+  for (auto jv=1; jv<iv; ++jv)
+    if (rgvertex[jv].y > rgvertex[jv+1].y) {
+      // Swap jv'th and jv+1'th members of rgvertex.
       Vertex* pv = rgvertex + jv;
-      double t;
-      t = pv->x; pv->x = (pv+1)->x; (pv+1)->x = t;
-      t = pv->y; pv->y = (pv+1)->y; (pv+1)->y = t;
+      std::swap(pv->x, (pv+1)->x);
+      std::swap(pv->y, (pv+1)->y);
       
       // Swap all rgregion[].i_'s with the values jv and jv+1.
-      for (ir=1; ir<=nr; ir++)
-	{
+      for (auto ir=1; ir<=nr; ++ir) {
 	Region& r = rgregion[ir];
 	if (r.i1 == jv) { r.i1 = jv+1; } else if (r.i1 == jv+1) { r.i1 = jv; }
 	if (r.i2 == jv) { r.i2 = jv+1; } else if (r.i2 == jv+1) { r.i2 = jv; }
 	if (r.i3 == jv) { r.i3 = jv+1; } else if (r.i3 == jv+1) { r.i3 = jv; }
-	}
       }
-  }
+    }
 
-  //for (ir=1; ir<=nr; ir++)
+  //for (auto ir=1; ir<=nr; ++ir)
   //  printf("new region: %d %d %d\n", rgregion[ir].i1, rgregion[ir].i2, rgregion[ir].i3);
 
   {
   int rgLeftRegion[350][350];
   int rgRightRegion[350][350];
-  for (iv=1; iv<=nv; iv++)
-  for (jv=1; jv<=nv; jv++)
-    {
+  for (auto iv=1; iv<=nv; ++iv)
+  for (auto jv=1; jv<=nv; ++jv) {
     rgLeftRegion[iv][jv] = -1;
     rgRightRegion[iv][jv] = -1;
-    }
+  }
 
   // Stuff all the other fields.
-  for (ir=1; ir<=nr; ir++)
-    {
+  for (auto ir=1; ir<=nr; ++ir) {
     Region& r = rgregion[ir];
 
     // Sort r's vertices in counterclockwise order.
@@ -660,10 +635,7 @@ bool Edahiro_Init(const int cpt, const vertex* qi, const int csi, const d_simple
     const double angleAC = Angle(vy(r.i3) - vy(r.i1), vx(r.i3) - vx(r.i1));
 
     if (Normalize(angleAC - angleAB) > M_PI)
-      {
-      // Swap i2 and i3 in place.
-      const int t = r.i2; r.i2 = r.i3; r.i3 = t;
-      }
+      std::swap(r.i2, r.i3);
 
     // Record the regions to the left of these edges,
     // and to the right of the reversed edges.
@@ -677,15 +649,15 @@ bool Edahiro_Init(const int cpt, const vertex* qi, const int csi, const d_simple
 
     //printf("leftrgn(%d) of %d %d %d\n", ir, r.i1, r.i2, r.i3);
     //printf("rigtrgn(%d) of %d %d %d\n", ir, r.i1, r.i3, r.i2);
-    }
+  }
 
   // Accumulate the edge list.
   // We can hit only the lower triangle of rgLeftRegion,rgRightRegion
   // (jv<iv, not jv<=nv) because the ir-loop above hits each edge
   // in both directions.
 
-  for (iv=1; iv<=nv; iv++)
-  for (jv=1; jv< iv; jv++)
+  for (auto iv=1; iv<=nv; ++iv)
+  for (auto jv=1; jv< iv; ++jv)
     {
     if (rgLeftRegion[iv][jv] <= 0. && rgRightRegion[iv][jv] <= 0.)
       // No edge joining iv'th and jv'th vertices.
@@ -693,18 +665,15 @@ bool Edahiro_Init(const int cpt, const vertex* qi, const int csi, const d_simple
 
     Edge& e = rgedge[ne];
     int ivHead, ivTail;
-    if (vy(iv)>vy(jv) || (vy(iv)==vy(jv) && vx(iv)<vx(jv)))
-      {
+    if (vy(iv)>vy(jv) || (vy(iv)==vy(jv) && vx(iv)<vx(jv))) {
       // edge forwards
       ivHead = iv;
       ivTail = jv;
-      }
-    else
-      {
+    } else {
       // edge backwards
       ivHead = jv;
       ivTail = iv;
-      }
+    }
     e.ihead = ivHead;
     e.itail = ivTail;
     e.lface = Tweak(rgLeftRegion [e.ihead][e.itail]);
@@ -722,8 +691,7 @@ bool Edahiro_Init(const int cpt, const vertex* qi, const int csi, const d_simple
   }
 
   // Stuff field pnext for each edge ie.
-  for (ie=1; ie<=ne; ie++)
-    {
+  for (auto ie=1; ie<=ne; ++ie) {
     double aMin = 2.*M_PI;
     int jeMin = -1;
 
@@ -731,103 +699,82 @@ bool Edahiro_Init(const int cpt, const vertex* qi, const int csi, const d_simple
     // excluding the edge ie itself,
     // with smallest angle greater than ie's angle.
     // ("The Lowest Highest Point"! -- Moxy Fruvous)
-    for (je=1; je<=ne; je++)
-      {
+    for (auto je=1; je<=ne; ++je) {
       if (je == ie)
 	continue;
-      if (ihead(ie) == ihead(je))
-	{
+      if (ihead(ie) == ihead(je)) {
 	const double a = Normalize(angle(je) - angle(ie));
-	if (a < aMin)
-	  {
+	if (a < aMin) {
 	  aMin = a;
 	  jeMin = je;
-	  }
-	}
-      if (ihead(ie) == itail(je))
-	{
-	const double a = Normalize(negangle(je) - angle(ie));
-	if (a < aMin)
-	  {
-	  aMin = a;
-	  jeMin = -je;
-	  }
 	}
       }
-
+      if (ihead(ie) == itail(je)) {
+	const double a = Normalize(negangle(je) - angle(ie));
+	if (a < aMin) {
+	  aMin = a;
+	  jeMin = -je;
+	}
+      }
+    }
     rgedge[ie].pnext = jeMin;
     //printf("edge %d's pnext is %d\n", ie, jeMin);
-    }
+  }
 
   // Stuff field mnext for each edge ie.
-  for (ie=1; ie<=ne; ie++)
-    {
+  for (auto ie=1; ie<=ne; ++ie) {
     double aMin = 2.*M_PI;
     int jeMin = -1;
 
     // Accumulate the edge je incident to itail(ie),
     // not ie itself,
     // with smallest angle greater than ie's angle.
-    for (je=1; je<=ne; je++)
-      {
+    for (auto je=1; je<=ne; ++je) {
       if (je == ie)
 	continue;
-      if (itail(ie) == itail(je))
-	{
+      if (itail(ie) == itail(je)) {
 	const double a = Normalize(angle(je) - angle(ie));
-	if (a < aMin)
-	  {
+	if (a < aMin) {
 	  aMin = a;
 	  jeMin = -je;
-	  }
-	}
-      if (itail(ie) == ihead(je))
-	{
-	const double a = Normalize(negangle(je) - angle(ie));
-	if (a < aMin)
-	  {
-	  aMin = a;
-	  jeMin = je;
-	  }
 	}
       }
-
-    rgedge[ie].mnext = jeMin;
+      if (itail(ie) == ihead(je)) {
+	const double a = Normalize(negangle(je) - angle(ie));
+	if (a < aMin) {
+	  aMin = a;
+	  jeMin = je;
+	}
+      }
     }
+    rgedge[ie].mnext = jeMin;
+  }
 
   // Stuff field ies for each vertex iv.
-  for (iv=1; iv<=nv; iv++)
-    {
+  for (auto iv=1; iv<=nv; ++iv) {
     // Find an edge incident to iv.
-    for (ie=1; ie<=ne; ie++)
-      {
-      if (ihead(ie) == iv)
-	{
+    for (auto ie=1; ie<=ne; ++ie) {
+      if (ihead(ie) == iv) {
 	rgvertex[iv].ies = ie;
 	// iv'th vertex has an incident edge ie
 	// (whose vertices are rgedge[ie].ihead and rgedge[ie].itail).
 	break;
 	}
-      if (itail(ie) == iv)
-	{
+      if (itail(ie) == iv) {
 	rgvertex[iv].ies = -ie;
 	// iv'th vertex has an incident edge ie
 	// (whose vertices are rgedge[ie].itail and rgedge[ie].ihead).
 	break;
-	}
       }
-    if (rgvertex[iv].ies == 0)
-      {
+    }
+    if (rgvertex[iv].ies == 0) {
       printf("internal error in Edahiro_Init(): %d'th vertex has no incident edge.\n", iv);
       return false;
-      }
-    //printf("vertex %d's ies is edge %d\n", iv, ies(iv));
     }
+    //printf("vertex %d's ies is edge %d\n", iv, ies(iv));
+  }
 
-  //fprintf(stderr, "\nEdahiro data read in and prepared.\n");
-  Preprocess();
-  //fprintf(stderr, "\nEdahiro data preprocessed, ready for queries.\n\n");
-  return true;
+  return Preprocess();
 }
 
 // Returns -1 if point lies outside the hull.
