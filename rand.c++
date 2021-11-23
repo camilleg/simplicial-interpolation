@@ -11,14 +11,13 @@
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  */
 
-#include <stdio.h>
 #include <time.h>
 #include <stdlib.h> // for erand48()
 #include "hull.h" // Verify that init_rand()'s signature matches.
 
-unsigned short X[3];
+unsigned short X[3] = {0};
 double double_rand() { return erand48(X); }
 
 void init_rand(long seed) {
-	fprintf(stderr, "init_rand: seed = %d\n", X[1]=(seed==0) ? time(0) : seed);
+	X[1]=(seed==0) ? time(0) : seed;
 }

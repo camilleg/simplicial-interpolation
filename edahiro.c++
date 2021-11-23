@@ -9,6 +9,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 
 #include "edahiro.h"
 
@@ -17,9 +18,9 @@ struct Vertex {
   int ies; // index into rgedge, an edge incident to this vertex
 };
 
-const int cvertexMax = 8200;
-Vertex rgvertex[cvertexMax+1];
-int nv=1;
+static constexpr auto cvertexMax = 8200;
+static Vertex rgvertex[cvertexMax+1];
+static auto nv = 1;
 #define cPt nv
 
 struct Edge {
@@ -36,13 +37,13 @@ struct Edge {
 struct Region {
   int i1, i2, i3; // ipt's (our regions are only triangular).
 };
-const int cregionMax = 1000; // 350*250?
-Region rgregion[cregionMax+2];
-int nr = 1;
+static constexpr auto cregionMax = 1000; // 350*250?
+static Region rgregion[cregionMax+2];
+static auto nr = 1;
 
-const int cedgeMax = 12300;
-Edge rgedge[cedgeMax+1];
-int ne=1;
+static constexpr auto cedgeMax = 12300;
+static Edge rgedge[cedgeMax+1];
+static auto ne = 1;
 
 inline double  vx(const int i) { return rgvertex[i].x; }
 inline double  vy(const int i) { return rgvertex[i].y; }
@@ -58,29 +59,29 @@ inline double angle(const int i) { return rgedge[i].angle; }
 inline double negangle(const int i) { return rgedge[i].negangle; }
 
 // Data structures for preprocessing phase.
-int ihor[351][251];
-int hor[30001][3];
-int iver[351][251];
-double ver[3001];
-int pver[30001][3];
-int inod[351][251];
-int nod[8201];
-int face[351][251];
-int edge[12301][2]; // Doubly linked list of edges.  [0] is prev, [1] is next.
+static int ihor[351][251];
+static int hor[30001][3];
+static int iver[351][251];
+static double ver[3001];
+static int pver[30001][3];
+static int inod[351][251];
+static int nod[8201];
+static int face[351][251];
+static int edge[12301][2]; // Doubly linked list of edges.  [0] is prev, [1] is next.
 
-double xmin = 0.;
-double ymin = 0.;
-double xminOrig = 0.;
-double yminOrig = 0.;
-double xd = 0.;
-double yd = 0.;
-double xdOrig = 0.;
-double ydOrig = 0.;
+static auto xmin = 0.0;
+static auto ymin = 0.0;
+static auto xminOrig = 0.0;
+static auto yminOrig = 0.0;
+static auto xd = 0.0;
+static auto yd = 0.0;
+static auto xdOrig = 0.0;
+static auto ydOrig = 0.0;
 
-int n1 = 0; // number of buckets
-int n2 = 0;
+static auto n1 = 0; // number of buckets
+static auto n2 = 0;
 
-bool Preprocess()
+inline bool Preprocess()
 {
   int i;
   int nheh = 0;
@@ -167,7 +168,6 @@ bool Preprocess()
 
   // Transform coordinate system.
 
-  fprintf(stderr, "ruh roh %f %f %f %f\n", xmin, ymin, xd, yd);
   for (i=1; i<=nv; i++)
     {
     rgvertex[i].x = (vx(i) - xmin) / xd + 1.;
@@ -557,7 +557,6 @@ inline int Tweak(const int ir)
   { return ir >= 1 ? ir : 0; }
   // 0 is index of (implicit) infinite unbounded region
 
-
 // Zero-based, not 1-based.
 // Permuting of points so they are sorted by y-coordinate.
 
@@ -574,7 +573,7 @@ bool Edahiro_Init(int cpt, const vertex* qi, int csi, const d_simplex* si)
   }
   nr = csi;
   if (nr < 1) {
-    fprintf(stderr, "error: Edahiro_Init() needs at least 1 region.\n");
+    fprintf(stderr, "error: Edahiro_Init() needs at least 1 region, not %d.\n", nr);
     return false;
   }
 
@@ -587,113 +586,95 @@ bool Edahiro_Init(int cpt, const vertex* qi, int csi, const d_simplex* si)
     rgregion[ir].i1 = si[ir-1][0] + 1;
     rgregion[ir].i2 = si[ir-1][1] + 1;
     rgregion[ir].i3 = si[ir-1][2] + 1;
+    //if (ir<5) printf("new raw region: %d %d %d\n", rgregion[ir].i1, rgregion[ir].i2, rgregion[ir].i3);
   }
 
   // Sort rgvertex[] by increasing y-coordinate.
   // (Bubble-sort for now.)
   // Adjust rgregion[].* to match.
   // For each swap in rgvertex, swap the rgregion[].i_'s with those values too.
-  for (auto iv=nv-2; iv>1; --iv)
-  for (auto jv=1; jv<iv; ++jv)
-    if (rgvertex[jv].y > rgvertex[jv+1].y) {
-      // Swap jv'th and jv+1'th members of rgvertex.
-      Vertex* pv = rgvertex + jv;
-      std::swap(pv->x, (pv+1)->x);
-      std::swap(pv->y, (pv+1)->y);
-      
-      // Swap all rgregion[].i_'s with the values jv and jv+1.
-      for (auto ir=1; ir<=nr; ++ir) {
-	Region& r = rgregion[ir];
-	if (r.i1 == jv) { r.i1 = jv+1; } else if (r.i1 == jv+1) { r.i1 = jv; }
-	if (r.i2 == jv) { r.i2 = jv+1; } else if (r.i2 == jv+1) { r.i2 = jv; }
-	if (r.i3 == jv) { r.i3 = jv+1; } else if (r.i3 == jv+1) { r.i3 = jv; }
+  for (auto iv=nv-2; iv>1; --iv) {
+    for (auto jv=1; jv<iv; ++jv) {
+      Vertex& r0 = rgvertex[jv];
+      Vertex& r1 = rgvertex[jv+1];
+      if (r0.y > r1.y) {
+	std::swap(r0.x, r1.x);
+	std::swap(r0.y, r1.y);
+	// Swap all rgregion[].i_'s with the values jv and jv+1.
+	for (auto ir=1; ir<=nr; ++ir) {
+	  Region& r = rgregion[ir];
+	  if (r.i1 == jv) { r.i1 = jv+1; } else if (r.i1 == jv+1) { r.i1 = jv; }
+	  if (r.i2 == jv) { r.i2 = jv+1; } else if (r.i2 == jv+1) { r.i2 = jv; }
+	  if (r.i3 == jv) { r.i3 = jv+1; } else if (r.i3 == jv+1) { r.i3 = jv; }
+	}
       }
     }
+  }
 
   //for (auto ir=1; ir<=nr; ++ir)
   //  printf("new region: %d %d %d\n", rgregion[ir].i1, rgregion[ir].i2, rgregion[ir].i3);
 
   {
-  int rgLeftRegion[350][350];
-  int rgRightRegion[350][350];
-  for (auto iv=1; iv<=nv; ++iv)
-  for (auto jv=1; jv<=nv; ++jv) {
-    rgLeftRegion[iv][jv] = -1;
-    rgRightRegion[iv][jv] = -1;
-  }
+    int rgLeftRegion [nv+1][nv+1];
+    int rgRightRegion[nv+1][nv+1];
+    memset(rgLeftRegion , -1, sizeof rgLeftRegion);
+    memset(rgRightRegion, -1, sizeof rgRightRegion);
 
-  // Stuff all the other fields.
-  for (auto ir=1; ir<=nr; ++ir) {
-    Region& r = rgregion[ir];
+    // Stuff all the other fields.
+    for (auto ir=1; ir<=nr; ++ir) {
+      Region& r = rgregion[ir];
 
-    // Sort r's vertices in counterclockwise order.
-    // r is a triangle, so we can just check one of the
-    // angles of the triangle:  if it exceeds 180 degrees,
-    // we go around it in the other direction.
+      // Sort r's vertices counterclockwise.
+      // Because r is a triangle, just check one of its angles.
+      // If that exceeds 180 degrees, go around it the other way.
+      //if (ir<5) fprintf(stderr, "region %d %d %d\n", ir, r.i1, r.i2);
+      const auto angleAB = Angle(vy(r.i2) - vy(r.i1), vx(r.i2) - vx(r.i1));
+      const auto angleAC = Angle(vy(r.i3) - vy(r.i1), vx(r.i3) - vx(r.i1));
+      if (Normalize(angleAC - angleAB) > M_PI)
+	std::swap(r.i2, r.i3);
 
-    const double angleAB = Angle(vy(r.i2) - vy(r.i1), vx(r.i2) - vx(r.i1));
-    const double angleAC = Angle(vy(r.i3) - vy(r.i1), vx(r.i3) - vx(r.i1));
+      // Record the regions to the left of these edges,
+      // and to the right of the reversed edges.
+      rgLeftRegion [r.i1][r.i2] = ir;
+      rgLeftRegion [r.i2][r.i3] = ir;
+      rgLeftRegion [r.i3][r.i1] = ir;
+      rgRightRegion[r.i2][r.i1] = ir;
+      rgRightRegion[r.i3][r.i2] = ir;
+      rgRightRegion[r.i1][r.i3] = ir;
 
-    if (Normalize(angleAC - angleAB) > M_PI)
-      std::swap(r.i2, r.i3);
-
-    // Record the regions to the left of these edges,
-    // and to the right of the reversed edges.
-
-    rgLeftRegion [r.i1][r.i2] = ir;
-    rgLeftRegion [r.i2][r.i3] = ir;
-    rgLeftRegion [r.i3][r.i1] = ir;
-    rgRightRegion[r.i2][r.i1] = ir;
-    rgRightRegion[r.i3][r.i2] = ir;
-    rgRightRegion[r.i1][r.i3] = ir;
-
-    //printf("leftrgn(%d) of %d %d %d\n", ir, r.i1, r.i2, r.i3);
-    //printf("rigtrgn(%d) of %d %d %d\n", ir, r.i1, r.i3, r.i2);
-  }
-
-  // Accumulate the edge list.
-  // We can hit only the lower triangle of rgLeftRegion,rgRightRegion
-  // (jv<iv, not jv<=nv) because the ir-loop above hits each edge
-  // in both directions.
-
-  for (auto iv=1; iv<=nv; ++iv)
-  for (auto jv=1; jv< iv; ++jv)
-    {
-    if (rgLeftRegion[iv][jv] <= 0. && rgRightRegion[iv][jv] <= 0.)
-      // No edge joining iv'th and jv'th vertices.
-      continue;
-
-    Edge& e = rgedge[ne];
-    int ivHead, ivTail;
-    if (vy(iv)>vy(jv) || (vy(iv)==vy(jv) && vx(iv)<vx(jv))) {
-      // edge forwards
-      ivHead = iv;
-      ivTail = jv;
-    } else {
-      // edge backwards
-      ivHead = jv;
-      ivTail = iv;
+      //printf("leftrgn(%d) of %d %d %d\n", ir, r.i1, r.i2, r.i3);
+      //printf("rigtrgn(%d) of %d %d %d\n", ir, r.i1, r.i3, r.i2);
     }
-    e.ihead = ivHead;
-    e.itail = ivTail;
-    e.lface = Tweak(rgLeftRegion [e.ihead][e.itail]);
-    e.rface = Tweak(rgRightRegion[e.ihead][e.itail]);
-    e.angle = Angle(vy(e.itail) - vy(e.ihead), vx(e.itail) - vx(e.ihead));
-    e.negangle = Angle(vy(e.ihead) - vy(e.itail), vx(e.ihead) - vx(e.itail));
-    //printf("edge %d is (%d,%d): LRfaces %d %d\n",
-    //  ne, ihead(ne), itail(ne), lface(ne), rface(ne));
 
-    ++ne;
+    // Accumulate the edge list.
+    // We can hit only the lower triangle of rgLeftRegion,rgRightRegion
+    // (jv<iv, not jv<=nv) because the ir-loop above hits each edge
+    // in both directions.
+
+    for (auto iv=1; iv<=nv; ++iv)
+    for (auto jv=1; jv< iv; ++jv) {
+      if (rgLeftRegion[iv][jv] <= 0 && rgRightRegion[iv][jv] <= 0)
+	// No edge joins the iv'th and jv'th vertices.
+	continue;
+
+      Edge& e = rgedge[ne++];
+      const bool edgeForwards = (vy(iv) > vy(jv) || (vy(iv)==vy(jv) && vx(iv)<vx(jv)));
+      e.ihead = edgeForwards ? iv : jv;
+      e.itail = edgeForwards ? jv : iv;
+      e.lface = Tweak(rgLeftRegion [e.ihead][e.itail]);
+      e.rface = Tweak(rgRightRegion[e.ihead][e.itail]);
+      e.angle    = Angle(vy(e.itail) - vy(e.ihead), vx(e.itail) - vx(e.ihead));
+      e.negangle = Angle(vy(e.ihead) - vy(e.itail), vx(e.ihead) - vx(e.itail));
     }
-  --ne;
-  // For all e above, vy(e.ihead) >= vy(e.itail);  if ==, vx(head) < vx(tail).
-  // This is our convention for which direction an edge points in.
+    --ne;
+    // For all e above, vy(e.ihead) >= vy(e.itail);  if ==, vx(head) < vx(tail).
+    // This is our convention for which direction an edge points in.
   }
 
   // Stuff field pnext for each edge ie.
   for (auto ie=1; ie<=ne; ++ie) {
-    double aMin = 2.*M_PI;
-    int jeMin = -1;
+    auto aMin = 2.0 * M_PI;
+    auto jeMin = -1;
 
     // Find the edge je incident to ihead(ie),
     // excluding the edge ie itself,
@@ -723,8 +704,8 @@ bool Edahiro_Init(int cpt, const vertex* qi, int csi, const d_simplex* si)
 
   // Stuff field mnext for each edge ie.
   for (auto ie=1; ie<=ne; ++ie) {
-    double aMin = 2.*M_PI;
-    int jeMin = -1;
+    auto aMin = 2.0 * M_PI;
+    auto jeMin = -1;
 
     // Accumulate the edge je incident to itail(ie),
     // not ie itself,
@@ -768,7 +749,7 @@ bool Edahiro_Init(int cpt, const vertex* qi, int csi, const d_simplex* si)
       }
     }
     if (rgvertex[iv].ies == 0) {
-      printf("internal error in Edahiro_Init(): %d'th vertex has no incident edge.\n", iv);
+      printf("Edahiro_Init got invalid input: %d'th vertex has no incident edge.\n", iv);
       return false;
     }
     //printf("vertex %d's ies is edge %d\n", iv, ies(iv));

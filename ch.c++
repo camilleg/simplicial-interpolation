@@ -13,16 +13,12 @@
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  */
 
-
-
 #include <float.h>
 #include <math.h>
 #include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <locale.h>
 #include <string.h>
-
 
 #include "hull.h"
 
@@ -749,7 +745,7 @@ simplex *build_convex_hull(gsitef *get_s, site_n *site_numm, short dim, short vd
 
 	root = NULL;
 	if (vd) {
-		p = hull_infinity;
+		hull_p = hull_infinity;
 		NEWLRC(basis_s, infinity_basis);
 		infinity_basis->vecs[2*rdim-1]
 			= infinity_basis->vecs[rdim-1]
@@ -757,14 +753,14 @@ simplex *build_convex_hull(gsitef *get_s, site_n *site_numm, short dim, short vd
 		infinity_basis->sqa
 			= infinity_basis->sqb
 			= 1;
-	} else if (!(p = (*get_site)())) return 0;
+	} else if (!(hull_p = (*get_site)())) return 0;
 
 	NEWL(simplex,root);
 
 	ch_root = root;
 
 	copy_simp(s,root);
-	root->peak.vert = p;
+	root->peak.vert = hull_p;
 	root->peak.simp = s;
 	s->peak.simp = root;
 

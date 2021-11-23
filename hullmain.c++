@@ -1,7 +1,6 @@
 #include <float.h>
 #include <math.h>
 #include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <locale.h>
 #include <string.h>
@@ -67,7 +66,7 @@ site read_next_site(long j){
 	int i=0, k=0;
 	static char buf[100], *s;
 
-	if (j!=-1) p = new_site(p,j);
+	if (j!=-1) hull_p = new_site(hull_p,j);
 	if (j!=0) while ((s=fgets(buf,sizeof(buf),INFILE))) {
  		if (buf[0]=='%') continue;
 		for (k=0; buf[k] && isspace(buf[k]); k++);
@@ -80,13 +79,13 @@ site read_next_site(long j){
 	while (buf[k]) {
 		while (buf[k] && isspace(buf[k])) k++;
 		if (buf[k] && j!=-1) {
-			if (sscanf(buf+k,"%lf",p+i)==EOF) {
+			if (sscanf(buf+k,"%lf",hull_p+i)==EOF) {
 				fprintf(DFILE, "bad input line: %s\n", buf);
 				exit(1);
 			}
-			p[i] = floor(mult_up*p[i]+0.5);   
-			mins[i] = (mins[i]<p[i]) ? mins[i] : p[i];
-			maxs[i] = (maxs[i]>p[i]) ? maxs[i] : p[i];
+			hull_p[i] = floor(mult_up*hull_p[i]+0.5);
+			mins[i] = (mins[i]<hull_p[i]) ? mins[i] : hull_p[i];
+			maxs[i] = (maxs[i]>hull_p[i]) ? maxs[i] : hull_p[i];
 		}
 		if (buf[k]) i++;
 		while (buf[k] && !isspace(buf[k])) k++;
@@ -94,7 +93,7 @@ site read_next_site(long j){
 
 	if (!dim) dim = i;
 	if (i!=dim) {DEB(-10,inconsistent input);DEBTR(-10); exit(1);}	
-	return p;
+	return hull_p;
 }
 
 /*
@@ -379,3 +378,9 @@ int main(int argc, char **argv) {
 	free_hull_storage();
 	exit(0);
 }
+
+// Avoid a link error for the standalone hull program.
+HH* vpH = nullptr;
+TT* vpT = nullptr;
+int iH = 0;
+int iT = 0;

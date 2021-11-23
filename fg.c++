@@ -13,11 +13,9 @@
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  */
 
-
 #include <float.h>
 #include <math.h>
 #include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <locale.h>
 #include <string.h>

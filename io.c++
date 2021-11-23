@@ -13,7 +13,6 @@
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <assert.h>
@@ -133,7 +132,7 @@ void print_triang(simplex *root, FILE *F, print_neighbor_f *pnf) {
 	visit_triang(root, print_simplex);
 }
 
-void *p_peak_test(simplex *s) {return (s->peak.vert==p) ? (void*)s : (void*)NULL;}
+void *p_peak_test(simplex *s) {return (s->peak.vert==hull_p) ? (void*)s : (void*)NULL;}
 
 simplex *check_simplex(simplex *s, void *){
 	int i,j,k,l;
@@ -145,7 +144,7 @@ simplex *check_simplex(simplex *s, void *){
 		sns = sn->simp;
 		if (!sns) {
 			fprintf(DFILE, "check_triang; bad simplex\n");
-			print_simplex_f(s, DFILE, &print_neighbor_full); fprintf(DFILE, "site_num(p)=%ld\n",site_num(p));
+			print_simplex_f(s, DFILE, &print_neighbor_full); fprintf(DFILE, "site_num(p)=%ld\n",site_num(hull_p));
 			return s;
 		}
 		if (!s->peak.vert && sns->peak.vert && i!=-1) {
@@ -157,7 +156,7 @@ simplex *check_simplex(simplex *s, void *){
 		for (j=-1,snn=sns->neigh-1; j<cdim && snn->simp!=s; j++,snn++);
 		if (j==cdim) {
 			fprintf(DFILE, "adjacency failure:\n");
-			DEBEXP(-1,site_num(p))
+			DEBEXP(-1,site_num(hull_p))
 			print_simplex_f(sns, DFILE, &print_neighbor_full);
 			print_simplex_f(s, DFILE, &print_neighbor_full);
 			exit(1);
@@ -181,13 +180,45 @@ simplex *check_simplex(simplex *s, void *){
 	return NULL;
 }
 
-int p_neight(simplex *s, int i, void *) {return s->neigh[i].vert !=p;}
+int p_neight(simplex *s, int i, void *) {return s->neigh[i].vert !=hull_p;}
 
 void check_triang(simplex *root){visit_triang(root, &check_simplex);}
 
 void check_new_triangs(simplex *s){visit_triang_gen(s, check_simplex, p_neight);}
 
 /* outfuncs: given a list of points, output in a given format */
+
+// Stuff vpH and vpT.
+// If v has a -1, it's a face ("tri," vpH) on the complex's hull.
+// Otherwise it's a simplex ("tet," vpT) of the complex (vpT).
+void CG_vlist_out(point* v, int vdim, FILE*, int) {
+  if (!v)
+    return;
+  // Stuff rgi[].
+  // If a coord was negative, it's a hull face.  Otherwise it's a "tet".
+  bool fHull = false;
+  int rgi[MAXDIM];
+  for (auto j=0; j<vdim; ++j) {
+    rgi[j] = site_num(v[j]);
+    if (rgi[j] < 0)
+      fHull = true;
+  }
+
+  if (fHull) {
+    // Copy rgi into vpH[iH], skipping the -1.
+    extern HH* vpH;
+    extern int iH;
+    for (auto jT=0,j=0; j<vdim; ++j)
+      if (rgi[j] >= 0)
+        vpH[iH][jT++] = rgi[j];
+    ++iH;
+  } else {
+    extern TT* vpT;
+    extern int iT;
+    std::copy(rgi, rgi+vdim, vpT[iT].begin());
+    ++iT;
+  }
+}
 
 void vlist_out(point *v, int vdim, FILE *Fin, int) {
 	static FILE *F;

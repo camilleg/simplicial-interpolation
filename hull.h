@@ -12,6 +12,8 @@
  */
 
 #pragma once
+#include <array>
+#include <cstdio>
 #include "points.h"
 #include "stormacs.h"
 
@@ -51,7 +53,7 @@ int i;										\
 
 typedef point site;
 
-extern site p; 			/* the current site */
+extern site hull_p; 			/* the current site */
 
 extern Coord hull_infinity[10];	/* point at infinity for Delaunay triang */
 
@@ -190,7 +192,7 @@ simplex *print_simplex(simplex*, void*);
 
 void print_triang(simplex*, FILE*, print_neighbor_f*);
 
-out_func vlist_out, ps_out, cpr_out, mp_out, off_out;
+out_func CG_vlist_out, vlist_out, ps_out, cpr_out, mp_out, off_out;
 	/* functions for different formats */
 
 visit_func facets_print, afacets_print, ridges_print;
@@ -218,3 +220,7 @@ void print_fg_alt(fg*, FILE *, int);
 void print_hist_fg(simplex *, fg*, FILE *);
 
 /*  void arena_check(void); */	/* from hobby's debugging malloc  */
+
+// Derived from vss's map/mc.h.
+using TT = std::array<int, MAXDIM+2>; // d+2 would suffice, but hull.exe doesn't know d.
+using HH = std::array<int, MAXDIM+1>; // d+1 would suffice.

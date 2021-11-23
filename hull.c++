@@ -13,7 +13,6 @@
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <stdarg.h>
@@ -22,7 +21,7 @@
 
 #include "hull.h"
 
-site p;
+site hull_p;
 long pnum;
 
 int	rdim,	/* region dimension: (max) number of sites specifying region */
@@ -122,15 +121,15 @@ void connect(simplex *s) {
 
 	if (!s) return;
 	assert(!s->peak.vert
-		&& s->peak.simp->peak.vert==p
-		&& !op_vert(s,p)->simp->peak.vert);
+		&& s->peak.simp->peak.vert==hull_p
+		&& !op_vert(s,hull_p)->simp->peak.vert);
 	if (s->visit==pnum) return;
 	s->visit = pnum;
 	seen = s->peak.simp;
 	xfi = op_simp(seen,s)->vert;
 	for (i=0, sn = s->neigh; i<cdim; i++,sn++) {
 		xb = sn->vert;
-		if (p == xb) continue;
+		if (hull_p == xb) continue;
 		sb = seen;
 		sf = sn->simp;
 		xf = xfi;
@@ -152,8 +151,8 @@ void connect(simplex *s) {
 
 simplex *make_facets(simplex *seen) {
 /*
- * visit simplices s with sees(p,s), and make a facet for every neighbor
- * of s not seen by p
+ * visit simplices s with sees(hull_p,s), and make a facet for every neighbor
+ * of s not seen by hull_p
  */
 	simplex *n;
 	static simplex *ns;
@@ -161,14 +160,14 @@ simplex *make_facets(simplex *seen) {
 	int i;
 
 	if (!seen) return NULL;
-	DEBS(-1) assert(sees(p,seen) && !seen->peak.vert); EDEBS
-	seen->peak.vert = p;
+	DEBS(-1) assert(sees(hull_p,seen) && !seen->peak.vert); EDEBS
+	seen->peak.vert = hull_p;
 
 	for (i=0,bn = seen->neigh; i<cdim; i++,bn++) {
 		n = bn->simp;
 		if (pnum != n->visit) {
 			n->visit = pnum;
-			if (sees(p,n)) make_facets(n);
+			if (sees(hull_p,n)) make_facets(n);
 		} 
 		if (n->peak.vert) continue;
 		copy_simp(ns,seen);
@@ -178,7 +177,7 @@ simplex *make_facets(simplex *seen) {
 		ns->peak.simp = seen;
 /*		ns->Sb -= ns->neigh[i].basis->sqb; */
 		NULLIFY(basis_s,ns->neigh[i].basis);
-		ns->neigh[i].vert = p;
+		ns->neigh[i].vert = hull_p;
 		bn->simp = op_simp(n,seen)->simp = ns;
 	}
 	return ns;
@@ -196,7 +195,7 @@ simplex *extend_simplices(simplex *s) {
 
 	if (s->visit == pnum) return s->peak.vert ? s->neigh[ocdim].simp : s;
 	s->visit = pnum;
-	s->neigh[ocdim].vert = p;
+	s->neigh[ocdim].vert = hull_p;
 	NULLIFY(basis_s,s->normal);
 	NULLIFY(basis_s,s->neigh[0].basis);
 	if (!s->peak.vert) {
@@ -228,7 +227,7 @@ simplex *search(simplex *root) {
 	if (!st) st = (simplex **)malloc((ss+MAXDIM+1)*sizeof(simplex*));
 	push(root->peak.simp);
 	root->visit = pnum;
-	if (!sees(p,root))
+	if (!sees(hull_p,root))
 		for (i=0,sn=root->neigh;i<cdim;i++,sn++) push(sn->simp);
 	while (tms) {
 		if (tms>ss)
@@ -237,7 +236,7 @@ simplex *search(simplex *root) {
 		pop(s);
 		if (s->visit == pnum) continue;
 		s->visit = pnum;
-		if (!sees(p,s)) continue;
+		if (!sees(hull_p,s)) continue;
 		if (!s->peak.vert) return s;
 		for (i=0, sn=s->neigh; i<cdim; i++,sn++) push(sn->simp);
 	}
@@ -258,13 +257,13 @@ point get_another_site(void) {
 
 void buildhull (simplex *root) {
 	while (cdim < rdim) {
-		p = get_another_site();
-		if (!p) return;
-		if (out_of_flat(root,p))
+		hull_p = get_another_site();
+		if (!hull_p) return;
+		if (out_of_flat(root,hull_p))
 			extend_simplices(root);
 		else
 			connect(make_facets(search(root)));
 	}
-	while ((p = get_another_site()) != NULL)
+	while ((hull_p = get_another_site()) != NULL)
 		connect(make_facets(search(root)));
 }

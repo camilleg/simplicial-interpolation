@@ -1,15 +1,15 @@
 // Simplicial interpolation.
 
+#include <algorithm> // sort, for debugging
 #include <cmath>
-#include <cstdio>
 #include <cstdlib> // strtoXXX, erand48, exit
+#include <cstring> // bcmp, for debugging
 #include <limits>
 #include <unistd.h>
 
 #include "bary.h"
 #include "edahiro.h"
 #include "gacli.h"
-#include "hull.h"
 #include "sammon.h"
 
 #ifdef __APPLE__
@@ -105,8 +105,8 @@ d_simplex* readSimplices(const char* szFile, int& count, int& countAll)
 }
 
 vertex qC{0}; // Constructed common point of the ray-simplices.
-e_vertex pC{0}; // What qC maps to.
 vertex* qi = nullptr;
+e_vertex pC{0}; // What qC maps to.
 e_vertex* pi = nullptr;
 d_simplex* si = nullptr;
 simplexHint* hi = nullptr;
@@ -131,6 +131,7 @@ bool dump_qi()
 
 // Scale the inputs to the hull algorithm, which uses exact integer arithmetic.
 // Outside [1e2, 1e7], ch.c++ suffers degeneracies and overshoots.
+// (Hull does this itself too, with mult_up.)
 constexpr auto scale = 1e6;
 
 void randomSites_d(vertex* dst, int n) {
@@ -147,6 +148,17 @@ void randomSites_e(e_vertex* dst, int n) {
 }
 
 e_vertex eval(const vertex&);
+
+// Sort each simplex's vertices, only to compare multiple runs for testing.
+bool d_simplex_compare(const d_simplex& a, const d_simplex& b) {
+  return std::lexicographical_compare(a.x, a.x + d+1, b.x, b.x + d+1);
+}
+void sort_output(d_simplex* rgs) {
+  for (auto i=0; i<csiAll; ++i)
+    std::sort(rgs[i].x, rgs[i].x + (i<csi ? d+1 : d));
+  std::sort(rgs, rgs+csi, d_simplex_compare);
+  std::sort(rgs+csi, rgs+csiAll, d_simplex_compare);
+}
 
 bool init()
 {
@@ -197,11 +209,45 @@ bool init()
     return false;
 
   // Compute Delaunay triangulation.
-  char buf[1000];
-  sprintf(buf, "cat %s | ./hull -d | sed '2,$!d' > %s", szFileQi, szFileSi);
-  if (system(buf) < 0)
-    fprintf(stderr, "system command failed\n");
-  si = readSimplices(szFileSi, csi, csiAll);
+
+  {
+    // This verified that system()'s output matches delaunay_tri()'s,
+    // for cPointBecomesThis = 5, *30*, 60, 400; e = 3, *8*, 30.
+
+    // sed strips the first line, "%./hull -d".
+    char buf[1000];
+    sprintf(buf, "cat %s | ./hull -d | sed '2,$!d' > %s 2> /tmp/si-debug", szFileQi, szFileSi);
+    if (system(buf) < 0) {
+      fprintf(stderr, "system() failed\n");
+      return false;
+    }
+    auto si2 = readSimplices(szFileSi, csi, csiAll);
+    if (!si2)
+      return false;
+    printf("old way counts: %d %d\n", csi, csiAll);
+    sort_output(si2);
+
+    // callhull.c++ avoids tightly coupling hull.h to this file.
+    extern d_simplex* delaunay_tri(int, int, int&, int&);
+    si = delaunay_tri(d, cPoint, csi, csiAll);
+    if (!si)
+      return false;
+    printf("new way counts: %d %d\n", csi, csiAll);
+    sort_output(si);
+
+    if (bcmp(si, si2, csiAll * sizeof(d_simplex)) != 0) {
+      printf("New and old outputs unequal.\n\n");
+      for (auto i=0; i<csiAll; ++i) {
+	for (auto j=0; j<d+1; ++j) printf("%2d ", si[i][j]);
+	printf("  --  ");
+	for (auto j=0; j<d+1; ++j) printf("%2d ", si2[i][j]);
+	printf("\n");
+      }
+      delete [] si2;
+      return false;
+    }
+    /*;; si=si2;*/ delete [] si2;
+  }
 
   // printf("read %d true simplices, %d ray-simplices.\n", csi, csiAll-csi);
 
