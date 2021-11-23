@@ -1,11 +1,10 @@
 // Simplicial interpolation.
 
-#include <algorithm> // sort, for debugging
+#include <algorithm>
 #include <cmath>
-#include <cstdlib> // strtoXXX, erand48, exit
-#include <cstring> // bcmp, for debugging
+#include <cstdlib> // exit()
 #include <limits>
-#include <unistd.h>
+#include <random>
 
 #include "bary.h"
 #include "edahiro.h"
@@ -21,88 +20,6 @@
 #endif
 
 int cPoint = -1;
-const char* szFileQi = "/tmp/.x";
-const char* szFileSi = "/tmp/.simplicial_interpolation.txt";
-
-// Read d-simplices from szFile into an array.
-// count stores how many true simplices are read (no -1 vertex).
-// countAll stores that, plus how many ray-simplices are read.
-// True simplices precede ray-simplices in the returned array.
-// Caller is responsible for freeing memory.
-d_simplex* readSimplices(const char* szFile, int& count, int& countAll)
-{
-  // Count how many lines.
-  count = 0;
-  FILE* pf = fopen(szFile, "r");
-  if (!pf)
-    return NULL;
-  char buf[1000];
-  // First pass:  count lines.
-  while (fgets(buf, sizeof(buf)-1, pf))
-    ++countAll;
-  d_simplex* sRet = new d_simplex[countAll];
-
-  // Second pass:  collect true simplices.
-  rewind(pf);
-  int i1 = 0;
-  for (int i=0; i<countAll; ++i)
-    {
-    d_simplex& s = sRet[i1];
-    if (fgets(buf, sizeof(buf)-1, pf) == NULL)
-      fprintf(stderr, "Failed to read a line from simplices file '%s'.\n", szFile);
-    char* pch = buf;
-    char* pchNext;
-    bool fRay = false;
-    for (int j=0; j<d+1; ++j)
-      {
-      s[j] = int(strtol(pch, &pchNext, 10));
-      if (pchNext == pch)
-        printf("Unexpected string \"%s\" while reading %dth int from %s\n",
-	  pch, j, szFile);
-      pch = pchNext;
-      if (s[j] < 0)
-        fRay = true;
-      }
-    if (!fRay)
-      if (++i1 >= countAll)
-        break;
-    }
-  count = i1;
-
-  // Third pass:  collect ray-simplices.
-  rewind(pf);
-  for (int i=0; i<countAll; ++i)
-    {
-    d_simplex& s = sRet[i1];
-    if (fgets(buf, sizeof(buf)-1, pf) == NULL)
-      fprintf(stderr, "Failed to read a ray-simplex line from file '%s'.\n", szFile);
-    char* pch = buf;
-    char* pchNext;
-    int jRay = -1;
-    for (int j=0; j<d+1; ++j)
-      {
-      s[j] = int(strtol(pch, &pchNext, 10));
-      pch = pchNext;
-      if (s[j] < 0)
-        jRay = j;
-      }
-    if (jRay >= 0)
-      {
-      // Disambiguate:  move -1 to the last position.
-      s[jRay] = s[d];
-      s[d] = -1;
-
-      // Don't overflow sRet[].
-      if (++i1 >= countAll)
-        break;
-      }
-    }
-
-  fclose(pf);
-  if (i1 != countAll)
-    printf("internal error in readSimplices.\n");
-  return sRet;
-}
 
 vertex qC{0}; // Constructed common point of the ray-simplices.
 vertex* qi = nullptr;
@@ -113,38 +30,26 @@ simplexHint* hi = nullptr;
 auto csi = 0;
 auto csiAll = 0;
 
-bool dump_qi()
-{
-  // Give q_i values to hull, to prepare for Delaunay triangulation.
-  FILE* pf = fopen(szFileQi, "w");
-  if (!pf)
-    return false;
-  for (int i=0; i<cPoint; ++i)
-    {
-    for (int j=0; j<d; ++j)
-      fprintf(pf, "%d ", int(qi[i][j]));
-    fprintf(pf, "\n");
-    }
-  fclose(pf);
-  return true;
-}
-
 // Scale the inputs to the hull algorithm, which uses exact integer arithmetic.
 // Outside [1e2, 1e7], ch.c++ suffers degeneracies and overshoots.
 // (Hull does this itself too, with mult_up.)
 constexpr auto scale = 1e6;
+std::uniform_real_distribution<double> range(0.0, scale);
+std::default_random_engine rng;
 
-void randomSites_d(vertex* dst, int n) {
-  unsigned short x[3]; // deliberately uninitialized for a mere demo
+vertex* randomSites_d(int n) {
+  auto r = new vertex[n];
   for (auto j=0; j<n; ++j)
   for (auto i=0; i<d; ++i)
-    dst[j][i] = scale * erand48(x);
+    r[j][i] = range(rng);
+  return r;
 }
-void randomSites_e(e_vertex* dst, int n) {
-  unsigned short x[3]; // deliberately uninitialized for a mere demo
+e_vertex* randomSites_e(int n) {
+  auto r = new e_vertex[n];
   for (auto j=0; j<n; ++j)
   for (auto i=0; i<e; ++i)
-    dst[j][i] = scale * erand48(x);
+    r[j][i] = range(rng);
+  return r;
 }
 
 e_vertex eval(const vertex&);
@@ -162,19 +67,15 @@ void sort_output(d_simplex* rgs) {
 
 bool init()
 {
-  if (e < d)
-    {
-    printf("error: e (%d) cannot be smaller than d (%d).\n", e, d);
+  if (e < d) {
+    printf("error: e (%d) < d (%d).\n", e, d);
     return false;
-    }
+  }
+  rng.seed(std::random_device{}());
 
   // Make output sites p_i.
-  {
-    const auto cPointBecomesThis = d==2 ? 30 : d+10;
-    pi = new e_vertex[cPointBecomesThis];
-    randomSites_e(pi, cPointBecomesThis);
-    cPoint = cPointBecomesThis;
-  }
+  cPoint = d==2 ? 30 : d+10;
+  pi = randomSites_e(cPoint);
 
   // Get input sites q_i.
 
@@ -183,71 +84,39 @@ bool init()
   switch (q_i_kind)
     {
   case q_i_Manual:
-    qi = new vertex[cPoint];
-    randomSites_d(qi, cPoint);
+    qi = randomSites_d(cPoint);
     break;
   case q_i_SammonsMapping:
     qi = computeSammon(pi, cPoint, scale);
-    if (!dump_qi())
-      return false;
     break;
   case q_i_GeneticAlgorithm:
     double tmp[e*cPoint];
     for (int i=0; i<cPoint; ++i)
     for (int j=0; j<e; ++j)
       tmp[i*e + j] = pi[i][j];
-    const Member* foo = GADistanceMatrix(cPoint, e, d, tmp);
+    Member* m = GADistanceMatrix(cPoint, e, d, tmp);
     qi = new vertex[cPoint];
     for (int i=0; i<cPoint; ++i)
     for (int j=0; j<d; ++j)
-      qi[i][j] = scale * double(foo->rgl[i*d + j]) / sHuge;
-    if (!dump_qi())
-      return false;
+      qi[i][j] = scale * double(m->rgl[i*d + j]) / sHuge;
+    free(m);
     break;
     }
   if (!qi)
     return false;
 
-  // Compute Delaunay triangulation.
-
-  {
-    // This verified that system()'s output matches delaunay_tri()'s,
-    // for cPointBecomesThis = 5, *30*, 60, 400; e = 3, *8*, 30.
-
-    // sed strips the first line, "%./hull -d".
-    char buf[1000];
-    sprintf(buf, "cat %s | ./hull -d | sed '2,$!d' > %s 2> /tmp/si-debug", szFileQi, szFileSi);
-    if (system(buf) < 0) {
-      fprintf(stderr, "system() failed\n");
-      return false;
-    }
-    auto si2 = readSimplices(szFileSi, csi, csiAll);
-    if (!si2)
-      return false;
-    //printf("old way counts: %d %d\n", csi, csiAll);
-    sort_output(si2);
-
-    // callhull.c++ avoids tightly coupling hull.h to this file.
-    extern d_simplex* delaunay_tri(int, int, int&, int&);
-    si = delaunay_tri(d, cPoint, csi, csiAll);
-    if (!si)
-      return false;
-    //printf("new way counts: %d %d\n", csi, csiAll);
-    sort_output(si);
-
-    if (bcmp(si, si2, csiAll * sizeof(d_simplex)) != 0) {
-      printf("New and old outputs unequal.\n\n");
-      for (auto i=0; i<csiAll; ++i) {
-	for (auto j=0; j<d+1; ++j) printf("%2d ", si[i][j]);
-	printf("  --  ");
-	for (auto j=0; j<d+1; ++j) printf("%2d ", si2[i][j]);
-	printf("\n");
-      }
-      delete [] si2;
-      return false;
-    }
-    delete [] si2;
+  // callhull.c++ avoids tightly coupling hull.h to this file.
+  extern d_simplex* delaunay_tri(int, int, int&, int&);
+  si = delaunay_tri(d, cPoint, csi, csiAll);
+  if (!si)
+    return false;
+  sort_output(si);
+#ifdef DUMP_SIMPLICES
+  for (auto i=0; i<csiAll; ++i) {
+    for (auto j=0; j<d+1; ++j) printf("%2d ", si[i][j]);
+    printf("\n");
   }
+#endif
 
   // printf("read %d true simplices, %d ray-simplices.\n", csi, csiAll-csi);
 
@@ -660,8 +529,7 @@ void evalAutomatic()
   // For d=2, 66 usec/test or 15000 tests/sec.
 
   constexpr auto ctest = 20; // 100000 for timing tests
-  vertex qtest[ctest];
-  randomSites_d(qtest, ctest);
+  auto qtest = randomSites_d(ctest);
   for (int i=0; i<ctest; ++i)
     {
     printf("eval %d/%d\n", i, ctest);
@@ -670,6 +538,7 @@ void evalAutomatic()
     const auto p = eval(q);
     dump_e("result: ", p);
     }
+  delete [] qtest;
 }
 #endif
 

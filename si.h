@@ -17,7 +17,7 @@ using e_vertex = std::array<double, e>;
 inline void dump_d(const char* sz, const   vertex& v) { cout << sz; for (auto i=0; i<d; ++i) cout << v[i] << " "; cout << "\n"; }
 inline void dump_e(const char* sz, const e_vertex& v) { cout << sz; for (auto i=0; i<e; ++i) cout << v[i] << " "; cout << "\n"; }
 
-extern vertex* qi; // for simplex::dump()
+extern vertex* qi; // for d_simplex::dump()
 
 // The x[]'s are indices into the vertices qi[];
 // -1 indicates qC, the common center point of the ray-simplices.
@@ -33,18 +33,10 @@ struct d_simplex
 
 // Inward-pointing normal vector of, and a point on, each facet of a simplex.
 // Precomputing these speeds up computation of barycentric coordinates.
-struct simplexHint
-  {
+struct simplexHint {
   vertex facetnormal[d+1];
   const vertex* facetvertex[d+1];
   double facetvolume[d+1];
-#ifdef UNUSED
-  void dump(const char* sz = "hint:") const
-    { cout << sz << "\n";
-      for (int i=0; i<d+1; i++) dump_d("\tnormal: ", facetnormal[i]);
-      for (int i=0; i<d+1; i++) dump_d("\tvertex: ", *facetvertex[i]);
-      for (int i=0; i<d+1; i++) printf("\tvolume: %f\n", facetvolume[i]); }
-#endif
-  };
+};
 
 inline double sq(double _) { return _*_; }

@@ -105,7 +105,11 @@ void resetEverything()
   mult_up = 1.0; // Already scaled by si.c++'s constexpr auto scale = 1e6.
 }
 
-extern d_simplex* delaunay_tri(int dimArg, int cPt, int& count, int& countAll) {
+// count stores how many true simplices are read (no -1 vertex).
+// countAll stores that, plus how many ray-simplices are read.
+// True simplices precede ray-simplices in the returned array.
+// Caller is responsible for delete[]ing return value.
+d_simplex* delaunay_tri(int dimArg, int cPt, int& count, int& countAll) {
   resetEverything();
   if (dimArg > MAXDIM) {
     std::cerr << "dimension bound MAXDIM exceeded\n";
@@ -118,7 +122,6 @@ extern d_simplex* delaunay_tri(int dimArg, int cPt, int& count, int& countAll) {
   vcpt = cPt;
   for (num_sites=0; read_next_site(num_sites); ++num_sites);
 
-  init_rand(0);
   make_shuffle();
   const auto root = build_convex_hull(get_next_site, site_numm, dim, 1);
 

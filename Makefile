@@ -19,24 +19,20 @@ endif
 # Optional file containing debugging options for CFLAGS.
 -include Rules.debug
 
-OBJS_HULL = hull.o ch.o io.o rand.o pointops.o fg.o hullmain.o
 OBJS_SI = si.o sammon.o ga.o gacli.o bary.o edahiro.o \
-	    hull.o ch.o io.o rand.o pointops.o fg.o callhull.o
+	  callhull.o ch.o fg.o hull.o io.o pointops.o
 OBJS = $(OBJS_SI) $(OBJS_HULL)
 
-EXES = hull si
+EXES = si
 
 all: $(EXES)
 	./si
-
-hull: $(OBJS_HULL)
-	$(CC) -o $@ $^ $(LIBS)
 
 si: $(OBJS_SI)
 	$(CC) -o $@ $^ $(LIBS)
 
 clean:
-	-rm -rf $(EXES) $(OBJS_HULL) $(OBJS_SI) .depend
+	-rm -rf $(EXES) $(OBJS_SI) .depend
 
 DEPENDFLAGS = -MMD -MT $@ -MF $(patsubst %.o,.depend/%.d,$@)
 %.o: %.c++
