@@ -224,7 +224,7 @@ bool init()
     auto si2 = readSimplices(szFileSi, csi, csiAll);
     if (!si2)
       return false;
-    printf("old way counts: %d %d\n", csi, csiAll);
+    //printf("old way counts: %d %d\n", csi, csiAll);
     sort_output(si2);
 
     // callhull.c++ avoids tightly coupling hull.h to this file.
@@ -232,7 +232,7 @@ bool init()
     si = delaunay_tri(d, cPoint, csi, csiAll);
     if (!si)
       return false;
-    printf("new way counts: %d %d\n", csi, csiAll);
+    //printf("new way counts: %d %d\n", csi, csiAll);
     sort_output(si);
 
     if (bcmp(si, si2, csiAll * sizeof(d_simplex)) != 0) {
@@ -246,7 +246,7 @@ bool init()
       delete [] si2;
       return false;
     }
-    /*;; si=si2;*/ delete [] si2;
+    delete [] si2;
   }
 
   // printf("read %d true simplices, %d ray-simplices.\n", csi, csiAll-csi);
