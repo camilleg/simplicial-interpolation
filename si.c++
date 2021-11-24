@@ -180,64 +180,39 @@ void terminate()
   delete [] hi;
 }
 
-// Return which simplex in si[] contains q.
-// Fill w[0 to d+1] with q's barycentric coordinates w.r.t. that simplex.
-
-int searchRaySimplices(const vertex& q, double* w)
-{
-  for (int i=csi; i<csiAll; ++i)
+// Return an index into si[], the simplex that contains q.
+// Return q's barycentric coordinates w.r.t. that simplex in w[0...d+1].
+int findSimplex(const vertex& q, double* w) {
+  if (d == 2) {
+    // Edahiro's algorithm.  Fast.
+    const auto i = Edahiro_RegionFromPoint(q[0], q[1]);
+    if (i >= 0) {
+      if (i >= csi) {
+	printf("internal error: edahiro returned out-of-range value\n");
+	return 0;
+      }
+      if (!computeBary(hi[i], q, w)) {
+	printf("internal error: edahiro returned wrong simplex.\n");
+	return 0;
+      }
+      return i;
+    }
+  } else {
+    // Brute force.
+    // Compute q's bary-coords w.r.t. each simplex in si[].
+    // If one has coordinates all nonnegative, return that one.
+    for (auto i=0; i<csi; ++i)
+      if (computeBary(hi[i], q, w))
+	return i;
+  }
+  // q wasn't in any simplex, so look in the ray-simplices.
+  for (auto i=csi; i<csiAll; ++i)
     if (computeBary(hi[i], q, w, true))
       return i;
-  printf("internal error in searchRaySimplices\n");
+  // This should be impossible, because the ray-simplices cover R^d.
+  printf("internal error in findSimplex\n");
   (void)computeBary(hi[0], q, w);
   return 0;
-}
-
-int searchBruteForce(const vertex& q, double* w)
-{
-  // Compute q's bary-coords w.r.t. each simplex in si[].
-  // If one has coordinates all nonnegative, return that one.
-  for (auto i=0; i<csi; ++i)
-    if (computeBary(hi[i], q, w))
-      return i;
-  // q wasn't in any simplex, so try the ray-simplices.
-  return searchRaySimplices(q, w);
-}
-
-int searchEdahiro(const vertex& q, double* w)
-{
-  if (d != 2) {
-    printf("internal error: edahiro needs d==2.\n");
-    exit(1);
-  }
-  const auto i = Edahiro_RegionFromPoint(q[0], q[1]);
-  if (i >= 0)
-    {
-    if (i >= csi)
-      {
-      printf("internal error: edahiro returned out-of-range value\n");
-      return 0;
-      }
-    if (!computeBary(hi[i], q, w))
-      {
-      printf("internal error: edahiro returned wrong simplex.\n");
-      return i;
-      }
-    return i;
-    }
-  // q wasn't in any simplex, so try the ray-simplices.
-  return searchRaySimplices(q, w);
-}
-
-int findSimplex(const vertex& q, double* w) {
-#ifdef TESTING
-  const int iS = searchBruteForce(q, w);
-  if (d == 2 && searchEdahiro(q, w) != iS)
-    printf("searchEdahiro and searchBruteForce disagree\n");
-  return iS;
-#else
-  return d==2 ? searchEdahiro(q, w) : searchBruteForce(q, w);
-#endif
 }
 
 #define DATAVIZ
@@ -253,7 +228,7 @@ e_vertex eval(const vertex& q)
   // Find which simplex s contains q.
 
   double w[d+1]; // q's coordinates w_j with respect to s.
-  const int iS = findSimplex(q, w);
+  const auto iS = findSimplex(q, w);
   const d_simplex& s = si[iS];
 
 #ifdef TESTING
