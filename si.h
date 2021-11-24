@@ -12,10 +12,16 @@ constexpr auto e = 8;
 
 // d-vertex and e-vertex.
 // Most computation is done in d-space, so d is often implicit.
-using   vertex = std::array<double, d>;
-using e_vertex = std::array<double, e>;
-inline void dump_d(const char* sz, const   vertex& v) { cout << sz; for (auto i=0; i<d; ++i) cout << v[i] << " "; cout << "\n"; }
-inline void dump_e(const char* sz, const e_vertex& v) { cout << sz; for (auto i=0; i<e; ++i) cout << v[i] << " "; cout << "\n"; }
+template <int n> using any_vertex = std::array<double, n>;
+using   vertex = any_vertex<d>;
+using e_vertex = any_vertex<e>;
+
+template <class T> void dump_v(const char* prefix, const T& v) {
+  constexpr int tSize[std::tuple_size<T>::value]{};
+  cout << prefix;
+  for (auto i=0u; i<std::size(tSize); ++i) cout << v[i] << " ";
+  cout << "\n";
+}
 
 extern vertex* qi; // for d_simplex::dump()
 
@@ -28,7 +34,7 @@ struct d_simplex
   int& operator[](int i) { return x[i]; }
   int  operator[](int i) const { return x[i]; }
   void dump(const char* sz = "s:") const
-    { cout << sz << "\n"; for (auto i=0; i<d+1; ++i) dump_d("\t", qi[x[i]]); }
+    { cout << sz << "\n"; for (auto i=0; i<d+1; ++i) dump_v("\t", qi[x[i]]); }
   };
 
 // Inward-pointing normal vector of, and a point on, each facet of a simplex.
@@ -39,4 +45,4 @@ struct simplexHint {
   double facetvolume[d+1];
 };
 
-inline double sq(double _) { return _*_; }
+template <class T> T sq(const T& _) { return _*_; }

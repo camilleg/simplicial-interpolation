@@ -509,9 +509,9 @@ void evalAutomatic()
     {
     printf("eval %d/%d\n", i, ctest);
     const auto q = qtest[i];
-    dump_d("query: ", q);
+    dump_v("query: ", q);
     const auto p = eval(q);
-    dump_e("result: ", p);
+    dump_v("result: ", p);
     }
   delete [] qtest;
 }
