@@ -1,5 +1,4 @@
 *.o
-hull
 si
 Rules.debug*
 .depend
