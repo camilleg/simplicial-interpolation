@@ -24,12 +24,10 @@ The components of Hull 1.0 used here are:
     fg.c++
     hull.c++
     hull.h
-    hullmain.c++
     io.c++
     pointops.c++
     points.h
     pointsites.h
-    rand.c++
     stormacs.h
 
   - Camille Goudeseune.
