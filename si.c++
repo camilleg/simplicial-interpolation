@@ -37,18 +37,20 @@ constexpr auto scale = 1e6;
 std::uniform_real_distribution<double> range(0.0, scale);
 std::default_random_engine rng;
 
+template<class T> void stuff(T& v) {
+  constexpr size_t tSize[std::tuple_size<T>::value]{};
+  for (auto i = 0u; i < std::size(tSize); ++i)
+    v[i] = range(rng);
+}
+
 vertex* randomSites_d(int n) {
   auto r = new vertex[n];
-  for (auto j=0; j<n; ++j)
-  for (auto i=0; i<d; ++i)
-    r[j][i] = range(rng);
+  for (auto j=0; j<n; ++j) stuff(r[j]);
   return r;
 }
 e_vertex* randomSites_e(int n) {
   auto r = new e_vertex[n];
-  for (auto j=0; j<n; ++j)
-  for (auto i=0; i<e; ++i)
-    r[j][i] = range(rng);
+  for (auto j=0; j<n; ++j) stuff(r[j]);
   return r;
 }
 
