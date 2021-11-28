@@ -12,17 +12,17 @@
 #include "hull.h"
 #include "si.h"
 
-int vcpt = 0;
-HH* vpH = nullptr;
-TT* vpT = nullptr;
-int iH = 0;
-int iT = 0;
-
 static point site_blocks[MAXBLOCKS];
 static int num_blocks = 0;
 static long num_sites = 0L;
 static int dim = -1;
 FILE* DFILE = stderr;
+
+int vcpt = 0;
+HH* vpH = nullptr;
+TT* vpT = nullptr;
+int iH = 0;
+int iT = 0;
 
 long site_numm(site p) {
   if (p==hull_infinity)
@@ -50,6 +50,7 @@ site read_next_site(long j) {
     return nullptr; // end of list
   hull_p = new_site(hull_p,j);
   for (auto i=0; i<dim; ++i) {
+    extern vertex* qi;
     hull_p[i] = floor(mult_up * qi[j][i] + 0.5);    // these are the input points.
     if (hull_p[i] < mins[i])
       mins[i] = hull_p[i];
@@ -148,14 +149,12 @@ d_simplex* delaunay_tri(int dimArg, int cPt, int& count, int& countAll) {
   for (auto i=0; i<countAll; ++i) {
     d_simplex& s = sRet[i];
     if (i < count) {
-      // Old: for (auto j=0; j<d+1; ++j) s[j] = vpT[i][j];
       const auto& first = vpT[i].begin();
-      std::copy(first, first + d+1, s.x);
+      std::copy(first, first + d+1, s.begin());
     } else {
       // vpH[][d] is left uninitialized by CG_vlist_out().  It's implicitly -1.
-      // Old: for (auto j=0; j<d; ++j) s[j] = vpH[i-count][j];
       const auto& first = vpH[i-count].begin();
-      std::copy(first, first + d, s.x);
+      std::copy(first, first + d, s.begin());
       s[d] = -1;
     }
   }

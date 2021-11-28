@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 
@@ -144,13 +145,12 @@ bool precomputeBary(const d_simplex& s, simplexHint& h, const vertex& centroid,
 
 #ifdef TESTING
   {
-  for (int i=0; i<d+1; ++i)
-    for (int j=i+1; j<d+1; ++j)
-      if (s[i] == s[j])
-        {
-	printf("Internal error: simplex has duplicate vertices %d and %d\n", i, j);
-	return false;
-	}
+    d_simplex tmp(s);
+    // s was sorted by sort_output().
+    if (std::unique(tmp.begin(), tmp.end()) != tmp.end()) {
+      dump_simplex("Internal error: duplicate vertices in simplex:", s);
+      return false;
+      }
   }
 #endif
 
@@ -236,7 +236,7 @@ bool precomputeBary(const d_simplex& s, simplexHint& h, const vertex& centroid,
       {
       printf("Internal error in precomputeBary().\n");
       // Matrix a was probably singular.  Because s had degenerate faces.
-      s.dump("possibly degenerate simplex:");
+      dump_simplex("possibly degenerate simplex:", s);
       return false;
       }
 

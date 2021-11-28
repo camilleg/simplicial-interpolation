@@ -56,13 +56,14 @@ e_vertex* randomSites_e(int n) {
 
 e_vertex eval(const vertex&);
 
-// Sort each simplex's vertices, only to compare multiple runs for testing.
+// Sort each simplex's vertices, to compare multiple runs for testing,
+// and to simplify other testing.
 bool d_simplex_compare(const d_simplex& a, const d_simplex& b) {
-  return std::lexicographical_compare(a.x, a.x + d+1, b.x, b.x + d+1);
+  return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
 }
 void sort_output(d_simplex* rgs) {
   for (auto i=0; i<csiAll; ++i)
-    std::sort(rgs[i].x, rgs[i].x + (i<csi ? d+1 : d));
+    std::sort(rgs[i].begin(), rgs[i].end() - (i<csi ? 0 : 1));
   std::sort(rgs, rgs+csi, d_simplex_compare);
   std::sort(rgs+csi, rgs+csiAll, d_simplex_compare);
 }
@@ -115,7 +116,7 @@ bool init()
   sort_output(si);
 #ifdef DUMP_SIMPLICES
   for (auto i=0; i<csiAll; ++i) {
-    for (auto j=0; j<d+1; ++j) printf("%2d ", si[i][j]);
+    for (auto j: si[i]) printf("%2d ", j);
     printf("\n");
   }
 #endif
@@ -160,9 +161,8 @@ bool init()
       // Set the j'th coord of v, the centroid of s,
       // to the mean of the j'th coords of s's vertices.
       v[j] = 0.0;
-      for (auto j1=0; j1<d+1; ++j1)
-	v[j] += (s[j1] < 0 ? qC : qi[s[j1]])[j];
-      v[j] /= d+1;
+      for (auto k: s) v[j] += (k < 0 ? qC : qi[k])[j];
+      v[j] /= d + 1.0;
       }
     }
 
@@ -255,8 +255,7 @@ e_vertex eval(const vertex& q)
 
 #ifdef DATAVIZ
   iFound = iS;
-  for (auto j=0; j<d+1; ++j)
-    wFound[j] = w[j];
+  std::copy(w, w + d+1, wFound); // For discs.
 #endif
 
   // Sum with weights w[] and vertices pi[s[]].
@@ -330,8 +329,7 @@ void display()
     glBegin(GL_TRIANGLES);
     if (fInside) {
       glColor3f(.25,0,.08);
-      for (auto j=0; j<=d; ++j)
-	glVert2(qi[s[j]]);
+      for (auto i: s) glVert2(qi[i]);
     } else {
       glColor3f(0,.15,0);
       glVert2(qC);
@@ -352,7 +350,7 @@ void display()
   for (auto i=0; i<e; ++i) {
     constexpr auto y0 = -0.5 * margin;
     const auto y1 = vP[i];
-    const auto x0 = scale / e * i;
+    const auto x0 = scale / e * (i+0.4);
     const auto x1 = scale / e * (i+0.6);
     glColor3f(0.0, 0.0, 0.1); glVertex2d(x0, y0);
     glColor3f(0.3, 0.3, 0.7); glVertex2d(x0, y1);

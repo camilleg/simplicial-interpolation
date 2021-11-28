@@ -17,25 +17,20 @@ using   vertex = any_vertex<d>;
 using e_vertex = any_vertex<e>;
 
 template <class T> void dump_v(const char* prefix, const T& v) {
-  constexpr int tSize[std::tuple_size<T>::value]{};
   cout << prefix;
-  for (auto i=0u; i<std::size(tSize); ++i) cout << v[i] << " ";
+  for (auto i: v) cout << i << " ";
   cout << "\n";
 }
 
-extern vertex* qi; // for d_simplex::dump()
-
-// The x[]'s are indices into the vertices qi[];
+// Stores indices into the d-vertices qi[].
 // -1 indicates qC, the common center point of the ray-simplices.
-// Stored in si[].
-struct d_simplex
-  {
-  int x[d+1];
-  int& operator[](int i) { return x[i]; }
-  int  operator[](int i) const { return x[i]; }
-  void dump(const char* sz = "s:") const
-    { cout << sz << "\n"; for (auto i=0; i<d+1; ++i) dump_v("\t", qi[x[i]]); }
-  };
+using d_simplex = std::array<int, d+1>;
+
+inline void dump_simplex(const char* prefix, const d_simplex& s) {
+  cout << prefix << "\n";
+  extern vertex* qi;
+  for (auto i: s) dump_v("\t", qi[i]);
+}
 
 // Inward-pointing normal vector of, and a point on, each facet of a simplex.
 // Precomputing these speeds up computation of barycentric coordinates.
