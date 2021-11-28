@@ -77,7 +77,7 @@ bool init()
   rng.seed(std::random_device{}());
 
   // Make output sites p_i.
-  cPoint = d==2 ? 30 : d+10;
+  cPoint = d==2 ? 20 : d+10;
   pi = randomSites_e(cPoint);
 
   // Get input sites q_i.
@@ -315,6 +315,7 @@ void drawRaysimplices(bool fInside) {
 void display()
 {
   glClear(GL_COLOR_BUFFER_BIT);
+  // gluOrtho2D set the range for both x and y to -margin .. scale+margin.
 
   // Mouse moved, thus assigning to vQ.
   // GLUT can't report mouse position until then.
@@ -346,12 +347,14 @@ void display()
   }
 
   // Bar graph of output values.
+  // (If e exceeds the window's width in pixels,
+  // aliasing amusingly omits some bars.)
   glBegin(GL_QUADS);
   for (auto i=0; i<e; ++i) {
     constexpr auto y0 = -0.5 * margin;
     const auto y1 = vP[i];
-    const auto x0 = scale / e * (i+0.4);
-    const auto x1 = scale / e * (i+0.6);
+    const auto x0 = scale * (i+0.4)/e;
+    const auto x1 = scale * (i+0.6)/e;
     glColor3f(0.0, 0.0, 0.1); glVertex2d(x0, y0);
     glColor3f(0.3, 0.3, 0.7); glVertex2d(x0, y1);
     glColor3f(0.3, 0.3, 0.7); glVertex2d(x1, y1);
@@ -458,7 +461,7 @@ void reshape(int w, int h)
   ySize = h;
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  gluOrtho2D(-margin, margin+scale, -margin, margin+scale);
+  gluOrtho2D(-margin, scale+margin, -margin, scale+margin);
 }
 
 void evalInteractive(int argc, char** argv)
