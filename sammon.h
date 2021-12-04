@@ -1,2 +1,3 @@
 #include "si.h"
-vertex* computeSammon(const e_vertex*, const int, const double);
+
+void computeSammon(std::vector<vertex>&, const std::vector<e_vertex>&, const double);

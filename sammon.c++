@@ -7,13 +7,14 @@
 #include "sammon.h"
 #include "util.h"
 
-vertex* computeSammon(const e_vertex* pi, const int cpt, const double scalar)
+void computeSammon(std::vector<vertex>& qi, const std::vector<e_vertex>& pi, const double scalar)
 {
   // Modification of the published algorithm:  store the squares of
   // the distances, instead of the distances themselves.
   // Avoids computing a zillion square roots.
 
   // Compute target values for distance matrix.
+  const int cpt = pi.size();
   double rgzTarget[triangularNumber(cpt - 1)];
   int i, j, k=0;
   for (i=0; i<cpt-1; ++i)
@@ -53,8 +54,7 @@ vertex* computeSammon(const e_vertex* pi, const int cpt, const double scalar)
 	j = (rand() >> 4) % cpt;
 	}
       while (i == j);
-      if (i>j)
-	{ int t=i; i=j; j=t; }
+      if (i>j) std::swap(i, j);
       // Now 0 <= i < j < cpt.
 
       // Find the distance between them, target and current.
@@ -109,9 +109,8 @@ vertex* computeSammon(const e_vertex* pi, const int cpt, const double scalar)
       }
     }
   // printf("Sammon's mapping: best error is %.3f\n", sqrt(errorMin));
-  vertex* result = new vertex[cpt];
+  qi.resize(cpt);
   for (i=0; i<cpt; ++i)
   for (k=0; k<d; ++k)
-    result[i][k] = rgzBest[i*d + k];
-  return result;
+    qi[i][k] = rgzBest[i*d + k];
 }

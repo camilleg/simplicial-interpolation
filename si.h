@@ -3,6 +3,7 @@
 #pragma once
 #include <array>
 #include <iostream>
+#include <vector>
 using std::cout;
 
 constexpr auto d = 2;
@@ -26,15 +27,12 @@ template <class T> void dump_v(const char* prefix, const T& v) {
 // -1 indicates qC, the common center point of the ray-simplices.
 using d_simplex = std::array<int, d+1>;
 
-inline void dump_simplex(const char* prefix, const d_simplex& s) {
-  cout << prefix << "\n";
-  extern vertex* qi;
-  for (auto i: s) dump_v("\t", qi[i]);
-}
+extern void dump_simplex(const char* prefix, const d_simplex&);
 
 // Inward-pointing normal vector of, and a point on, each facet of a simplex.
 // Precomputing these speeds up computation of barycentric coordinates.
 struct simplexHint {
+  const d_simplex* s;
   vertex facetnormal[d+1];
   const vertex* facetvertex[d+1];
   double facetvolume[d+1];

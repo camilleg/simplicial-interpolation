@@ -98,6 +98,10 @@ int RankAndCalculateFitness(int cPop, int cTopMost)
   for(i = 0; i < cPop; i++)
     {
     suitability[i] = ComputeSuitability(PvFromI(i));
+    if (std::isnan(suitability[i])) {
+      printf("Corrupt suitability.\n");
+      return -1;
+    }
     // optimization: cache retval of ComputeSuitability with a checksum on arg using cbMemberArg.
     if (suitability[i] == zFitnessMax)
       {

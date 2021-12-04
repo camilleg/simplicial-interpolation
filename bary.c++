@@ -2,7 +2,7 @@
 #include <cmath>
 #include <cstdio>
 
-#include "si.h"
+#include "bary.h"
 
 // Solve Ax=b, where A is d*d.  Returns false iff A is singular.
 // Crout's algorithm replaces A with its LU decomposition.
@@ -137,11 +137,12 @@ double determinant(const double* m, int n) {
   return det;
 }
 
-bool precomputeBary(const d_simplex& s, simplexHint& h, const vertex& centroid,
-  const vertex* rgv, const vertex* raysCentroid, [[maybe_unused]] bool fRaySimplex)
+simplexHint precomputeBary(const d_simplex& s, const vertex& centroid,
+  const std::vector<vertex>& rgv, const vertex* raysCentroid, [[maybe_unused]] bool fRaySimplex)
 {
+  simplexHint h = {}; // h.s == nullptr, so h is (not yet) valid.
   if (d <= 1)
-    return false;
+    return h;
 
 #ifdef TESTING
   {
@@ -149,7 +150,7 @@ bool precomputeBary(const d_simplex& s, simplexHint& h, const vertex& centroid,
     // s was sorted by sort_output().
     if (std::unique(tmp.begin(), tmp.end()) != tmp.end()) {
       dump_simplex("Internal error: duplicate vertices in simplex:", s);
-      return false;
+      return h;
       }
   }
 #endif
@@ -204,12 +205,9 @@ bool precomputeBary(const d_simplex& s, simplexHint& h, const vertex& centroid,
         printf("internal error: inconsistency #3: %d %d in precomputeBary.\n", i, d);
       schmoo[j] = ivertex;
 #endif
-      if (j >= d)
-        printf("internal error in precomputeBary!\n");
       rgvFacet[j] = ivertex<0 ? raysCentroid : &rgv[ivertex];
       if (i != ifacet)
         if (++j >= d)
-	  // Already finished;  quit now without overflowing.
 	  break;
       }
 
@@ -220,8 +218,8 @@ bool precomputeBary(const d_simplex& s, simplexHint& h, const vertex& centroid,
 #endif
 
     vertex& vNormal = h.facetnormal[ifacet];
-    for (i=0; i<d; ++i)
-      vNormal[i] = i==0 ? 1. : 0.;
+    vNormal.fill(0.0);
+    vNormal[0] = 1.0;
 
     double a[d][d];
     for (j=0; j<d; ++j)
@@ -237,29 +235,28 @@ bool precomputeBary(const d_simplex& s, simplexHint& h, const vertex& centroid,
       printf("Internal error in precomputeBary().\n");
       // Matrix a was probably singular.  Because s had degenerate faces.
       dump_simplex("possibly degenerate simplex:", s);
-      return false;
+      return h;
       }
 
     // Normalize vNormal to unit length (unfortunate pun).
     {
-    double t = 0.;
-    for (i=0; i<d; ++i)
-      t += sq(vNormal[i]);
-    t = sqrt(t);
-    for (i=0; i<d; ++i)
-      vNormal[i] /= t;
+      auto t = 0.0;
+      for (auto x: vNormal) t += sq(x);
+      t = sqrt(t);
+      for (auto& x: vNormal) x /= t;
     }
 
     // Compute vNormal dot (centroid - one_of_the_facet_points).
-    double t = 0.;
-    for (i=0; i<d; ++i)
-      t += vNormal[i] * (centroid[i] - (*rgvFacet[0])[i]);
-    if (fabs(t) < .0001)
-      printf("Warning: found degenerate simplex.\n");
-    else if (t < 0.)
-      // Reverse normal to orient it inwards w.r.t. the simplex.
+    {
+      auto t = 0.0;
       for (i=0; i<d; ++i)
-	vNormal[i] *= -1.;
+	t += vNormal[i] * (centroid[i] - (*rgvFacet[0])[i]);
+      if (fabs(t) < 0.0001)
+	printf("Warning: found degenerate simplex.\n");
+      else if (t < 0.0)
+	// Reverse normal to orient it inwards w.r.t. the simplex.
+	for (auto& x: vNormal) x *= -1.0;
+    }
 
 #ifdef TESTING
     {
@@ -284,7 +281,7 @@ bool precomputeBary(const d_simplex& s, simplexHint& h, const vertex& centroid,
         printf("Internal error in precomputeBary: vNormal isn't normal to facet %d's row %d:\n", ifacet, i);
 	printf("  (%g, %g) dot (%g, %g) = %g, not zero.\n",
 	    a[i][0], a[i][1], vNormal[0], vNormal[1], t);
-	return false;
+	return h;
 	}
       }
     }
@@ -297,7 +294,7 @@ bool precomputeBary(const d_simplex& s, simplexHint& h, const vertex& centroid,
 
     // Optimization: if we cached/hashed these, we'd avoid computing each facet twice.
 
-    // Compute (d-1)-volume of each facet (defined by rgvFacet[0,...,d-1] ).
+    // Compute the (d-1)-volume of each facet rgvFacet[0,...,d-1].
     switch (d)
       {
     case 2:
@@ -305,9 +302,10 @@ bool precomputeBary(const d_simplex& s, simplexHint& h, const vertex& centroid,
 	// Fast: Euclidean distance from rgvFacet[0] to rgvFacet[1].
 	const auto& a = *rgvFacet[0];
 	const auto& b = *rgvFacet[1];
-	h.facetvolume[ifacet] = hypot(b[0]-a[0], b[1]-a[1]); // these values are OK, 8/29/02
+	h.facetvolume[ifacet] = hypot(b[0]-a[0], b[1]-a[1]);
 	break;
 	}
+
     case 3:
 	{
 	// Fast: Area of triangle.
@@ -324,10 +322,9 @@ bool precomputeBary(const d_simplex& s, simplexHint& h, const vertex& centroid,
 	h.facetvolume[ifacet] = sqrt(s * (s-la) * (s-lb) * (s-lc));
 	break;
 	}
-    default:
-      // Compute volume via a generalization of Heron's formula,
-      // the Cayley-Menger determinant.
 
+    default:
+      // Use a generalization of Heron's formula, the Cayley-Menger determinant.
       double m[(d+1)*(d+1)];
       // Optimization:  m[] is symmetric in its main diagonal,
       // so we could compute only one half and reflect it into the other.
@@ -353,21 +350,16 @@ bool precomputeBary(const d_simplex& s, simplexHint& h, const vertex& centroid,
 	m[(i+1)*(d+1)+(j+1)] = _;
 	}
 
-      const double scalars[14] = {
+      constexpr double scalars[14] = {
         -1.,2.,-16.,288.,-9216.,460800.,-33177600.,3251404800.,-416179814400.,
         67421129932800.,-13484225986560000.,3263182688747520000.,
 	-939796614359285760000.,317651255653438586880000. };
-      double scalar;
-      if (d-1 <= 13)
-        scalar = scalars[d-1];
-      else
-	{
+      constexpr auto scalar = (d-1 <= 13) ? scalars[d-1] :
         // Should really compute Sloane's sequence A055546: (-1)^(j+1) / (2^j * (j!)^2).
 	// But approximation is okay (up to float overflow or underflow):
 	// relative, not absolute, volumes is what matters
 	// since we'll normalize them anyways (to sum to 1).
-	scalar = 1e30; // vague approximation
-	}
+	1e30; // vague approximation
 
       h.facetvolume[ifacet] = sqrt(determinant(m, d+1) / scalar);
       break;
@@ -377,7 +369,8 @@ bool precomputeBary(const d_simplex& s, simplexHint& h, const vertex& centroid,
       printf("internal error in computing facet volumes.\n");
 #endif
     }
-  return true;
+  h.s = &s;
+  return h;
 }
 
 // Fill w[0 to d+1] with q's barycentric coords w.r.t. s (i.e., w.r.t. h).

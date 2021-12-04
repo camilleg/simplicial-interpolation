@@ -189,20 +189,17 @@ void check_new_triangs(simplex *s){visit_triang_gen(s, check_simplex, p_neight);
 /* outfuncs: given a list of points, output in a given format */
 
 // Stuff vpH and vpT.
-// If v has a -1, it's a face ("tri," vpH) on the complex's hull.
-// Otherwise it's a simplex ("tet," vpT) of the complex (vpT).
+// If v has a -1, it's a face ("tri"angle) on the complex's hull (vpH).
+// Otherwise it's a simplex ("tet"rahedron) in the complex (vpT).
 void CG_vlist_out(point* v, int vdim, FILE*, int) {
   if (!v)
     return;
+
   // Stuff rgi[].
-  // If a coord was negative, it's a hull face.  Otherwise it's a "tet".
   bool fHull = false;
-  int rgi[MAXDIM];
-  for (auto j=0; j<vdim; ++j) {
-    rgi[j] = site_num(v[j]);
-    if (rgi[j] < 0)
-      fHull = true;
-  }
+  int rgi[vdim];
+  for (auto j=0; j<vdim; ++j)
+    fHull |= (rgi[j] = site_num(v[j])) < 0;
 
   if (fHull) {
     // Copy rgi into vpH[iH], skipping the -1.
@@ -213,6 +210,7 @@ void CG_vlist_out(point* v, int vdim, FILE*, int) {
         vpH[iH][jT++] = rgi[j];
     ++iH;
   } else {
+    // Copy rgi into vpT[iT].
     extern TT* vpT;
     extern int iT;
     std::copy(rgi, rgi+vdim, vpT[iT].begin());

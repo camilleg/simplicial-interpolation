@@ -560,18 +560,18 @@ inline int Tweak(const int ir)
 // Zero-based, not 1-based.
 // Permuting of points so they are sorted by y-coordinate.
 
-bool Edahiro_Init(int cpt, const vertex* qi, int csi, const d_simplex* si)
+bool Edahiro_Init(const std::vector<vertex>& qi, const std::vector<d_simplex>& si)
 {
   // Read the output of Hull algorithm.
   // nv, x's and y's, ntri, itri's.
   // Stuff nv and rgvertex, nr and rgregion.
 
-  nv = cpt;
+  nv = qi.size();
   if (nv < 3) {
     fprintf(stderr, "error: Edahiro_Init() needs at least 3 vertices, not %d.\n", nv);
     return false;
   }
-  nr = csi;
+  nr = si.size();
   if (nr < 1) {
     fprintf(stderr, "error: Edahiro_Init() needs at least 1 region, not %d.\n", nr);
     return false;

@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib> // random()
+#include <iostream>
 #include <limits>
 
 #undef VERBOSE
@@ -22,10 +23,7 @@ static int cdimDst = -1;
 
 //;; iloop jloop rg[triangularNumber(cpt,i,j)]  -->  iloop rg[i]
 
-static double* rgzDistSrc = nullptr;
-static double* rgzDistDst = nullptr;
-
-inline double sq(double _) { return _*_; }
+template <class T> T sq(const T& _) { return _*_; }
 
 /*
 Each linear dimension of the space may have a vastly different
@@ -38,7 +36,7 @@ Later: log-scale distance option for some dimensions. (use log(x) internally
        in the linear geometry; use x for i/o.
 */
 
-void InitDistanceMatrixZ(int cpt, int cdimSrc, double* rgzDist, double* rgzPt)
+void InitDistanceMatrixZ(int cpt, int cdimSrc, double* rgzDist, const double* rgzPt)
 {
   // compute scaling factors for each dimension
   double rgzScale[cdimSrc];
@@ -58,11 +56,15 @@ void InitDistanceMatrixZ(int cpt, int cdimSrc, double* rgzDist, double* rgzPt)
     auto zSum = 0.0;
     for (auto idim = 0; idim < cdimSrc; ++idim) {
       zSum += sq((rgzPt[i * cdimSrc + idim] -
-	 rgzPt[j * cdimSrc + idim]) * rgzScale[idim]);
+	          rgzPt[j * cdimSrc + idim]) * rgzScale[idim]);
     }
     zDistMax = std::max(zDistMax, rgzDist[TriIJ(i,j,cpt)] = sqrt(zSum));
   }
-  // normalize distances wrt longest distance.
+  if (zDistMax == 0.0) {
+    std::cerr << "InitDistanceMatrixZ() got inputs that made only zero distances.  Crash imminent.\n";
+    // rgzPt[] might have been all zeros.  Just DBZ and get it over with.
+  }
+  // Normalize distances wrt longest distance.
   for (auto i=0; i<cpt-1; ++i)
   for (auto j=i+1; j<cpt; ++j)
     rgzDist[TriIJ(i,j,cpt)] /= zDistMax;
@@ -90,6 +92,14 @@ void InitDistanceMatrixL(int cpt, int cdimDst, double* rgzDist, short* rgzPt)
 // Compute RMS error between 2 distance vectors (possibly triangular matrices).
 inline double DDistanceMatrix(double* rgzDist0, double* rgzDist1, int cpt)
 {
+#ifdef VERBOSE
+  for (auto k=0; k<cpt; ++k) {
+    if (std::isnan(rgzDist0[k])) {
+      std::cerr << "DDistanceMatrix got corrupt input.";
+      return std::numeric_limits<double>::signaling_NaN();
+    }
+  }
+#endif
   auto z = 0.0;
   for (auto k=0; k<cpt; ++k)
     z += sq(rgzDist0[k] - rgzDist1[k]);
@@ -152,6 +162,9 @@ void MutateRandom(void* pv, long cIter)
   }
   Tweak(pv);
 }
+
+static double* rgzDistSrc = nullptr;
+static double* rgzDistDst = nullptr;
 
 double ComputeSuitability(void* pv)
 {

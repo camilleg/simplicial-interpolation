@@ -7,7 +7,6 @@
 #include <cmath>
 #include <numeric>
 #include <random>
-#include <vector>
 
 #include "hull.h"
 #include "si.h"
@@ -50,7 +49,7 @@ site read_next_site(long j) {
     return nullptr; // end of list
   hull_p = new_site(hull_p,j);
   for (auto i=0; i<dim; ++i) {
-    extern vertex* qi;
+    extern std::vector<vertex> qi;
     hull_p[i] = floor(mult_up * qi[j][i] + 0.5);    // these are the input points.
     if (hull_p[i] < mins[i])
       mins[i] = hull_p[i];
@@ -106,15 +105,13 @@ void resetEverything()
   mult_up = 1.0; // Already scaled by si.c++'s constexpr auto scale = 1e6.
 }
 
-// count stores how many true simplices are read (no -1 vertex).
-// countAll stores that, plus how many ray-simplices are read.
-// True simplices precede ray-simplices in the returned array.
-// Caller is responsible for delete[]ing return value.
-d_simplex* delaunay_tri(int dimArg, int cPt, int& count, int& countAll) {
+void delaunay_tri(std::vector<d_simplex>& si, std::vector<d_simplex>& siRay, int dimArg, int cPt) {
   resetEverything();
   if (dimArg > MAXDIM) {
     std::cerr << "dimension bound MAXDIM exceeded\n";
-    return nullptr;
+    si.clear();
+    siRay.clear();
+    return;
   }
   dim = dimArg;
   point_size = site_size = dim * sizeof(Coord);
@@ -141,26 +138,21 @@ d_simplex* delaunay_tri(int dimArg, int cPt, int& count, int& countAll) {
   make_output(root, visit_hull, facets_print, &CG_vlist_out, stdout);
   // CG_vlist_out wrote output to vpT,iT (simplices aka tets) and vpH,iH (ray-simplices aka hull, without the -1).
 
-  count = iT; // aka ctet, aka csi.
-  countAll = iT + iH; // aka ctet + ctri
-  d_simplex* sRet = new d_simplex[countAll];
-
-  // Stuff sRet like readSimplices().  First simplices, then ray-simplices.
-  for (auto i=0; i<countAll; ++i) {
-    d_simplex& s = sRet[i];
-    if (i < count) {
-      const auto& first = vpT[i].begin();
-      std::copy(first, first + d+1, s.begin());
-    } else {
-      // vpH[][d] is left uninitialized by CG_vlist_out().  It's implicitly -1.
-      const auto& first = vpH[i-count].begin();
-      std::copy(first, first + d, s.begin());
-      s[d] = -1;
-    }
+  si.resize(iT); // aka ctet.
+  siRay.resize(iH); // aka ctri.
+  for (auto i=0; i<iT; ++i) {
+    const auto& first = vpT[i].begin();
+    std::copy(first, first + d+1, si[i].begin());
+  }
+  for (auto i=0; i<iH; ++i) {
+    auto& s = siRay[i];
+    // vpH[][d] is left uninitialized by CG_vlist_out().  It's implicitly -1.
+    const auto& first = vpH[i].begin();
+    std::copy(first, first + d, s.begin());
+    s[d] = -1;
   }
 
   free_hull_storage();
   for (auto i=0; i<num_blocks; ++i)
     free(site_blocks[i]);
-  return sRet;
 }
