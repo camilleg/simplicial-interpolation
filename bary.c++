@@ -4,12 +4,22 @@
 
 #include "bary.h"
 
+static int d = -1;
+
 // Solve Ax=b, where A is d*d.  Returns false iff A is singular.
 // Crout's algorithm replaces A with its LU decomposition.
 // Then back-substitution solves for x, which is stored in b.
-bool solveMatrix(double a[][d], vertex& b)
+bool solveMatrix(void* A, vertex& b)
 {
+  using dd = double[d][d];
+  dd* src = (dd*)A;
+  dd a;
+
   int i, j, k;
+  for (i=0; i<d; ++i)
+  for (j=0; j<d; ++j)
+    a[i][j] = (*src)[i][j];
+
   double scaling[d];
   for (i=0; i<d; ++i)
     {
@@ -140,6 +150,7 @@ double determinant(const double* m, int n) {
 simplexHint precomputeBary(const d_simplex& s, const vertex& centroid,
   const std::vector<vertex>& rgv, const vertex* raysCentroid, [[maybe_unused]] bool fRaySimplex)
 {
+  d = centroid.size();
   simplexHint h = {}; // h.s == nullptr, so h is (not yet) valid.
   if (d <= 1)
     return h;
@@ -157,6 +168,9 @@ simplexHint precomputeBary(const d_simplex& s, const vertex& centroid,
 
   // Precompute some properties of each facet.
   // ifacet'th facet is opposite ifacet'th vertex.
+  resize(h.facetnormal, d, d+1);
+  h.facetvertex.resize(d+1);
+  h.facetvolume.resize(d+1);
   for (int ifacet=0; ifacet<d+1; ++ifacet)
     {
     // Compute the inward-pointing unit-length normal to the facet.
@@ -218,7 +232,7 @@ simplexHint precomputeBary(const d_simplex& s, const vertex& centroid,
 #endif
 
     vertex& vNormal = h.facetnormal[ifacet];
-    vNormal.fill(0.0);
+    // Already zeroed.  // std::fill(vNormal.begin()+1, vNormal.end(), 0.0);
     vNormal[0] = 1.0;
 
     double a[d][d];
@@ -230,7 +244,7 @@ simplexHint precomputeBary(const d_simplex& s, const vertex& centroid,
 	a[i][j] = (*rgvFacet[i])[j] - (*rgvFacet[0])[j];
 	}
 
-    if (!solveMatrix(a, vNormal))
+    if (!solveMatrix(&a, vNormal))
       {
       printf("Internal error in precomputeBary().\n");
       // Matrix a was probably singular.  Because s had degenerate faces.
@@ -354,7 +368,7 @@ simplexHint precomputeBary(const d_simplex& s, const vertex& centroid,
         -1.,2.,-16.,288.,-9216.,460800.,-33177600.,3251404800.,-416179814400.,
         67421129932800.,-13484225986560000.,3263182688747520000.,
 	-939796614359285760000.,317651255653438586880000. };
-      constexpr auto scalar = (d-1 <= 13) ? scalars[d-1] :
+      const auto scalar = (d-1 <= 13) ? scalars[d-1] :
         // Should really compute Sloane's sequence A055546: (-1)^(j+1) / (2^j * (j!)^2).
 	// But approximation is okay (up to float overflow or underflow):
 	// relative, not absolute, volumes is what matters

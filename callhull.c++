@@ -138,8 +138,10 @@ void delaunay_tri(std::vector<d_simplex>& si, std::vector<d_simplex>& siRay, int
   make_output(root, visit_hull, facets_print, &CG_vlist_out, stdout);
   // CG_vlist_out wrote output to vpT,iT (simplices aka tets) and vpH,iH (ray-simplices aka hull, without the -1).
 
-  si.resize(iT); // aka ctet.
-  siRay.resize(iH); // aka ctri.
+  extern std::vector<vertex> qi;
+  const auto d = qi.front().size();
+  resize(si,    d+1, iT); // aka ctet
+  resize(siRay, d+1, iH); // aka ctri
   for (auto i=0; i<iT; ++i) {
     const auto& first = vpT[i].begin();
     std::copy(first, first + d+1, si[i].begin());

@@ -21,10 +21,18 @@
 
 vertex qC{0}; // Constructed common point of the ray-simplices.
 std::vector<vertex> qi;
-e_vertex pC{0}; // What qC maps to.
-std::vector<e_vertex> pi;
+vertex pC{0}; // What qC maps to.
+std::vector<vertex> pi;
 std::vector<d_simplex> si, siRay;
 std::vector<simplexHint> hi, hiRay;
+
+#define DATAVIZ
+#ifdef DATAVIZ
+bool fInside = false;
+d_simplex sFound;
+std::vector<double> wFound;
+vertex rFound;
+#endif
 
 void dump_simplex(const char* prefix, const d_simplex& s) {
   cout << prefix << "\n";
@@ -36,19 +44,15 @@ void dump_simplex(const char* prefix, const d_simplex& s) {
 // (Hull does this itself too, with mult_up.)
 constexpr auto scale = 1e6;
 
-std::uniform_real_distribution<double> range(0.0, scale);
 std::default_random_engine rng;
-template<class T> void stuff(T& v) {
-  constexpr size_t tSize[std::tuple_size<T>::value]{};
-  for (auto i = 0u; i < std::size(tSize); ++i)
-    v[i] = range(rng);
-}
-template<class T> void randomSites(std::vector<T>& vec, int n) {
-  vec.resize(n);
-  for (auto& v: vec) stuff(v);
+std::uniform_real_distribution<double> range(0.0, scale);
+
+void randomSites(std::vector<vertex>& vec, int dim, int n) {
+  resize(vec, dim, n);
+  for (auto& v: vec) for (auto& x: v) x = range(rng);
 }
 
-e_vertex eval(const vertex&);
+vertex eval(const vertex&);
 
 // Sort each simplex's vertices, to compare multiple runs for testing,
 // and to simplify other testing.
@@ -61,8 +65,7 @@ void sort_output(std::vector<d_simplex>& rgs, bool fRay) {
   std::sort(rgs.begin(), rgs.end(), d_simplex_compare);
 }
 
-bool init()
-{
+bool init(int d, int e, int cPoint) {
   if (e < d) {
     printf("error: e (%d) < d (%d).\n", e, d);
     return false;
@@ -70,8 +73,7 @@ bool init()
   rng.seed(std::random_device{}());
 
   // Make output sites p_i.
-  const auto cPoint = d==2 ? 20 : d+10;
-  randomSites(pi, cPoint);
+  randomSites(pi, e, cPoint);
 
   // Get input sites q_i.
   enum { q_i_Manual, q_i_SammonsMapping, q_i_GeneticAlgorithm };
@@ -79,18 +81,21 @@ bool init()
   switch (q_i_kind)
     {
   case q_i_Manual:
-    randomSites(qi, cPoint);
+    randomSites(qi, d, cPoint);
     break;
   case q_i_SammonsMapping:
+    resize(qi, d, cPoint);
     computeSammon(qi, pi, scale);
     break;
   case q_i_GeneticAlgorithm:
-    double tmp[e*cPoint];
-    for (int i=0; i<cPoint; ++i)
-    for (int j=0; j<e; ++j)
+    // Were tmp on the stack, e*cPoint > 200000 or so, the stack can overflow.
+    double* tmp = new double[e*cPoint];
+    for (auto i=0; i<cPoint; ++i)
+    for (auto j=0; j<e; ++j)
       tmp[i*e + j] = pi[i][j];
     Member* m = GADistanceMatrix(cPoint, e, d, tmp);
-    qi.resize(cPoint);
+    delete [] tmp;
+    resize(qi, d, cPoint);
     for (int i=0; i<cPoint; ++i)
     for (int j=0; j<d; ++j)
       qi[i][j] = scale * double(m->rgl[i*d + j]) / sHuge;
@@ -133,6 +138,7 @@ bool init()
   // Precompute some things to speed up eval().
 
   // Calculate qC, the centroid of the bounding box of all simplices.
+  qC.resize(d);
   for (auto i=0; i<d; ++i)
     {
     auto zMin = std::numeric_limits<double>::max();
@@ -151,7 +157,7 @@ bool init()
   hi.clear();
   for (const auto& s: si) {
     // Accumulate into vC the centroid of s.  Pass that to precomputeBary().
-    vertex vC{0};
+    vertex vC(d);
     for (auto j=0; j<d; ++j) {
       for (auto i: s) vC[j] += qi[i][j]; // k<0 is possible only for siRay, not for si.
       vC[j] /= d + 1.0;
@@ -165,7 +171,7 @@ bool init()
   hiRay.clear();
   for (const auto& s: siRay) {
     // Accumulate into vC the centroid of s.  Pass that to precomputeBary().
-    vertex vC{0};
+    vertex vC(d);
     for (auto j=0; j<d; ++j) {
       for (auto i: s) vC[j] += (i < 0 ? qC : qi[i])[j];
       vC[j] /= d + 1.0;
@@ -175,6 +181,10 @@ bool init()
       return false;
     hiRay.push_back(h);
   }
+
+#ifdef DATAVIZ
+  wFound.resize(d+1);
+#endif
 
   pC = eval(qC);
   return true;
@@ -190,14 +200,6 @@ void terminate()
   hiRay.clear();
 }
 
-#define DATAVIZ
-#ifdef DATAVIZ
-bool fInside = false;
-d_simplex sFound;
-double wFound[d+1] = {0};
-vertex rFound{0};
-#endif
-
 // Return the simplex that contains q.
 // On error, return an arbitrary simplex.
 // Into w[0...d+1], stuff q's barycentric coordinates w.r.t. that simplex.
@@ -205,7 +207,7 @@ const d_simplex& findSimplex(const vertex& q, double* w) {
 #ifdef DATAVIZ
   fInside = true;
 #endif
-  if (d == 2) {
+  if (q.size() == 2) {
     // Edahiro's algorithm.  Fast.
     const int i = Edahiro_RegionFromPoint(q[0], q[1]);
     if (i >= 0) {
@@ -242,23 +244,24 @@ const d_simplex& findSimplex(const vertex& q, double* w) {
 }
 
 // Map a d-vertex to an e-vertex.
-e_vertex eval(const vertex& q)
+vertex eval(const vertex& q)
 {
   // Find which simplex s contains q.
+  const auto d = q.size();
   double w[d+1]; // q's coordinates w_j with respect to s.
   const d_simplex& s = findSimplex(q, w);
 
 #ifdef TESTING
   // Verify that q == the point whose barycoords are w[] wrt s.
-  vertex r{0};
-  for (auto j=0; j<d; ++j) {
-    for (auto i=0; i<d+1; ++i)
+  vertex r(d);
+  for (auto j=0u; j<d; ++j) {
+    for (auto i=0u; i<d+1; ++i)
       r[j] += w[i] * (s[i] < 0 ? qC : qi[s[i]])[j];
   }
   // The reconstructed point is r.  How far is it from q?
   // (How accurate were the barycoords w[]?)
   auto dist = 0.0;
-  for (auto j=0; j<d; ++j)
+  for (auto j=0u; j<d; ++j)
     dist += sq(r[j] - q[j]);
   dist = sqrt(dist);
   if (dist > 1e-8)
@@ -270,13 +273,14 @@ e_vertex eval(const vertex& q)
 
 #ifdef DATAVIZ
   sFound = s;
-  std::copy(w, w + d+1, wFound); // For discs.
+  std::copy(w, w + d+1, wFound.begin()); // For discs.
 #endif
 
   // Sum with weights w[] and vertices pi[s[]].
-  e_vertex p{0};
-  for (auto j=0; j<e; ++j)
-    for (auto i=0; i<d+1; ++i)
+  const auto e = pi.front().size();
+  vertex p(e);
+  for (auto j=0u; j<e; ++j)
+    for (auto i=0u; i<d+1; ++i)
       p[j] += w[i] * (s[i] < 0 ? pC : pi[s[i]])[j];
   return p;
 }
@@ -285,7 +289,7 @@ e_vertex eval(const vertex& q)
 
 constexpr auto NaN = std::numeric_limits<double>::signaling_NaN();
 vertex vQ{NaN, NaN};
-e_vertex vP{0};
+vertex vP;
 constexpr auto margin = 0.15 * scale;
 
 void drawChar(const vertex& v, char c) {
@@ -359,7 +363,8 @@ void display()
     // (If e exceeds the window's width in pixels,
     // aliasing amusingly omits some bars.)
     glBegin(GL_QUADS);
-    for (auto i=0; i<e; ++i) {
+    const auto e = vP.size();
+    for (auto i=0u; i<e; ++i) {
       constexpr auto y0 = -0.5 * margin;
       const auto y1 = vP[i];
       const auto x0 = scale * (i+0.4)/e;
@@ -373,7 +378,8 @@ void display()
 
     // Disc around each vertex of containing simplex.
     // Disc's radius indicates weight (barycentric coordinate) of corresponding vertex.
-    for (auto i=0; i<=d; ++i) {
+    const auto d = vQ.size(); // Fussy.  It must be 2.
+    for (auto i=0u; i<=d; ++i) {
       const auto iVertex = sFound[i];
       const auto& v = iVertex < 0 ? qC : qi[iVertex];
       const auto r0 = 0.07 * scale;
@@ -472,7 +478,7 @@ void reshape(int w, int h)
   gluOrtho2D(-margin, scale+margin, -margin, scale+margin);
 }
 
-void evalInteractive(int argc, char** argv)
+void evalInteractive(int argc, char** argv, int d)
 {
   // Evaluate points interactively.
   // (For verifying the barycentric coords code.)
@@ -516,7 +522,7 @@ void evalAutomatic()
 
   constexpr auto ctest = 20; // 100000 for timing tests
   std::vector<vertex> qtest;
-  randomSites(qtest, ctest);
+  randomSites(qtest, d, ctest);
   for (const auto& q: qtest) {
     dump_v("query: ", q);
     const auto p = eval(q);
@@ -525,12 +531,18 @@ void evalAutomatic()
 }
 #endif
 
-int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
-{
-  if (!init())
+int main(int argc, char** argv) {
+  if (argc != 4) {
+    printf("usage: %s lowDim highDim numPoints\n", argv[0]);
+    return 1;
+  }
+  const auto d = atoi(argv[1]);
+  const auto e = atoi(argv[2]);
+  const auto cPoint = atoi(argv[3]);
+  if (!init(d, e, cPoint))
     return -1;
 #ifdef DATAVIZ
-  evalInteractive(argc, argv);
+  evalInteractive(argc, argv, d);
 #else
   evalAutomatic();
 #endif

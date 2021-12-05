@@ -43,9 +43,6 @@ Start at the bottom of [si.c++](./si.c++).
 For the OpenGL demo, call `evalInteractive()`;  alternatively,
 to exercise the interpolator on randomly generated data, call `evalAutomatic()`.
 
-The dimensions of the input and output spaces are set
-by the constants `d` and `e` at the top of [si.h](./si.h).
-
 ### History
 
 This was published in 2002 at [http://zx81.isl.uiuc.edu/interpolation/](http://web.archive.org/web/20021003120921/http://zx81.isl.uiuc.edu/interpolation/) (defunct), revised slightly in 2009, and moved to GitHub in 2018.

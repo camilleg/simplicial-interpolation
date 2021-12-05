@@ -26,7 +26,7 @@ OBJS = $(OBJS_SI) $(OBJS_HULL)
 EXES = si
 
 all: $(EXES)
-	./si
+	./si 2 7 22
 
 si: $(OBJS_SI)
 	$(CC) -o $@ $^ $(LIBS)

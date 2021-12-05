@@ -7,11 +7,14 @@
 #include "sammon.h"
 #include "util.h"
 
-void computeSammon(std::vector<vertex>& qi, const std::vector<e_vertex>& pi, const double scalar)
+void computeSammon(std::vector<vertex>& qi, const std::vector<vertex>& pi, const double scalar)
 {
   // Modification of the published algorithm:  store the squares of
   // the distances, instead of the distances themselves.
   // Avoids computing a zillion square roots.
+
+  const int d = qi.front().size();
+  const int e = pi.front().size();
 
   // Compute target values for distance matrix.
   const int cpt = pi.size();
@@ -108,8 +111,8 @@ void computeSammon(std::vector<vertex>& qi, const std::vector<e_vertex>& pi, con
 	}
       }
     }
+
   // printf("Sammon's mapping: best error is %.3f\n", sqrt(errorMin));
-  qi.resize(cpt);
   for (i=0; i<cpt; ++i)
   for (k=0; k<d; ++k)
     qi[i][k] = rgzBest[i*d + k];
