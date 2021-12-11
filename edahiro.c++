@@ -9,7 +9,7 @@
 
 #include <cmath>
 #include <cstdio>
-#include <cstring>
+#include <cstring> // memset
 
 #include "edahiro.h"
 
@@ -21,7 +21,6 @@ struct Vertex {
 static constexpr auto cvertexMax = 8200;
 static Vertex rgvertex[cvertexMax+1];
 static auto nv = 1;
-#define cPt nv
 
 struct Edge {
   int ihead, itail; // ivertex's
@@ -651,6 +650,7 @@ bool Edahiro_Init(const std::vector<vertex>& qi, const std::vector<d_simplex>& s
     // (jv<iv, not jv<=nv) because the ir-loop above hits each edge
     // in both directions.
 
+    ne = 1;  // One-based FORTRANism.
     for (auto iv=1; iv<=nv; ++iv)
     for (auto jv=1; jv< iv; ++jv) {
       if (rgLeftRegion[iv][jv] <= 0 && rgRightRegion[iv][jv] <= 0)
