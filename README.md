@@ -1,13 +1,6 @@
 ## Simplicial Interpolation
 
-<table>
-<tr>
-<td>
-
 ![screenshot](./screenshot.png)
-
-</td>
-<td>
 
 This software lets you specify a correspondence between points
 in two Euclidean spaces ℝ<sup>*d*</sup> and ℝ<sup>*e*</sup>,
@@ -16,16 +9,12 @@ this lets a mouse (*d* = 2) or a gamepad's pair of joysticks (*d* = 4)
 manipulate dozens or hundreds of parameters.
 
 It implements simplicial interpolation, as described in
-[Interpolated Mappings for Musical Instruments](http://camille-g.com/os02.pdf),
+[Interpolated Mappings for Musical Instruments](http://camille-g.com/os02.pdf),  
 published in [Organised Sound 7(2):85‒96](http://doi.org/10.1017/S1355771802002029), © Cambridge U. Press.
 
-</td>
-</tr>
-</table>
-
-This software is licensed under the [MIT License](https://mit-license.org/), © 2021 Camille Goudeseune,
+This software is licensed under the [MIT License](https://mit-license.org/), © 2021 Camille Goudeseune,  
 except for code from Ken Clarkson's [hull.shar](http://www.netlib.org/voronoi/), which is © 1995 AT&T
-and whose license (in each source file) is quite similar to the MIT License.
+and whose license is similar to the MIT License.
 
 ### How to build and self-test
 
@@ -33,7 +22,7 @@ On Windows 10, install [Windows Subsystem for Linux](https://docs.microsoft.com/
 
 On Linux or Windows, `sudo apt install libgl-dev libgl1-mesa-dev freeglut3-dev`.
 
-On Linux, or Windows, or macOS 10.3+ (2003-), `make test`
+On Linux, or Windows, or macOS 10.3+ (2003+), `make test`
 
 ### How to run the demo
 
