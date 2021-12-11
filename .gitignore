@@ -1,4 +1,5 @@
 *.o
-si
+glut
+selftest
 Rules.debug*
 .depend

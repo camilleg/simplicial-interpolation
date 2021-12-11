@@ -421,7 +421,9 @@ bool computeBary(const simplexHint& h, const vertex& q, double* w, bool fRaySimp
 
   if (fRaySimplex && fPositive && w[d] >= 0.)
     {
-    printf("internal inconsistency in raysimplex:  ALL positive barycoords.\n");
+    printf("\tInternal inconsistency in raysimplex: no negative barycoord:\n\t");
+    for (i=0; i<d+1; ++i) printf("%g ", w[i]);
+    printf("\n");
     return false;
     }
 

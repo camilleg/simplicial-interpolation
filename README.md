@@ -1,47 +1,53 @@
 ## Simplicial Interpolation
 
+<table>
+<tr>
+<td>
+
 ![screenshot](./screenshot.png)
+
+</td>
+<td>
 
 This software lets you specify a correspondence between points
 in two Euclidean spaces ℝ<sup>*d*</sup> and ℝ<sup>*e*</sup>,
-to then smoothly interpolate between them.  For instance, this lets a gamepad's
-two joysticks (four dimensions) control dozens or hundreds of parameters.
+to then smoothly interpolate between them.  For instance,
+this lets a mouse (*d* = 2) or a gamepad's pair of joysticks (*d* = 4)
+manipulate dozens or hundreds of parameters.
 
 It implements simplicial interpolation, as described in
 [Interpolated Mappings for Musical Instruments](http://camille-g.com/os02.pdf),
-[Organised Sound 7(2):85‒96](http://doi.org/10.1017/S1355771802002029), © Cambridge U. Press.
+published in [Organised Sound 7(2):85‒96](http://doi.org/10.1017/S1355771802002029), © Cambridge U. Press.
 
-The source code is licensed under the [MIT License](https://mit-license.org/).
-It is © 2021 Camille Goudeseune,
-except for code from Ken Clarkson's [hull.shar](http://www.netlib.org/voronoi/), which is © 1995 AT&T.
+</td>
+</tr>
+</table>
 
-### How to build and run
+This software is licensed under the [MIT License](https://mit-license.org/), © 2021 Camille Goudeseune,
+except for code from Ken Clarkson's [hull.shar](http://www.netlib.org/voronoi/), which is © 1995 AT&T
+and whose license (in each source file) is quite similar to the MIT License.
 
-On almost any Linux, or macOS 10.3+,
-to run the interactive OpenGL demo, type `make`.  
-On Windows 10:
-- Install [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10), using the [Ubuntu 20](https://www.microsoft.com/store/apps/9n6svws3rx71) distro.  
-- Therein, `sudo apt install libgl-dev libgul1-mesa-dev freegut3-dev`
-- `make`
-- To run, also install an X server such as [VcXsrv](https://sourceforge.net/projects/vcxsrv/).
+### How to build and self-test
 
-### How to operate
+On Windows 10, install [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10), using the [Ubuntu 20](https://www.microsoft.com/store/apps/9n6svws3rx71) distro.
 
-*Wave the mouse over the window.  If you like, click and drag even beyond the window.*
+On Linux or Windows, `sudo apt install libgl-dev libgl1-mesa-dev freeglut3-dev`.
 
-The mouse pointer `q` (for "query") is interpreted as a weighted sum
+On Linux, or Windows, or macOS 10.3+ (2003-), `make test`
+
+### How to run the demo
+
+- On Windows, install an X server such as [VcXsrv](https://sourceforge.net/projects/vcxsrv/).  
+- `make demo`, or, to specify the high dimension *e* (say, 20) and the number of points (say, 100), `./glut 20 100`  
+- Move the mouse around over the window.  
+- To exit, hit q or the escape key.  
+
+The mouse pointer `q` ("query") is interpreted as a weighted sum
 of the corners of its surrounding triangle.
 The size of each point's gray disc shows its weight.
 The special center point `C` is used for an unbounded simplex
-(a triangle with one edge at infinity) when `q` lies outside the points' convex hull.
-
-*Hit q or the escape key to exit.*
-
-### How to customize
-
-Start at the bottom of [si.c++](./si.c++).
-For the OpenGL demo, call `evalInteractive()`;  alternatively,
-to exercise the interpolator on randomly generated data, call `evalAutomatic()`.
+(a triangle with one edge at infinity),
+when `q` lies outside the points' convex hull.
 
 ### History
 

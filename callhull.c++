@@ -105,13 +105,19 @@ void resetEverything()
   mult_up = 1.0; // Already scaled by si.c++'s constexpr auto scale = 1e6.
 }
 
-void delaunay_tri(std::vector<d_simplex>& si, std::vector<d_simplex>& siRay, int dimArg, int cPt) {
+bool delaunay_tri(std::vector<d_simplex>& si, std::vector<d_simplex>& siRay, int dimArg, int cPt) {
   resetEverything();
+  if (cPt <= 1) {
+    // If cPt==1, iH==iT==1 but vpH and vpT remain uninitialized.
+    std::cerr << "Triangulation needs at least 2 points, not " << cPt << ".\n";
+    goto LAbort;
+  }
   if (dimArg > MAXDIM) {
     std::cerr << "dimension bound MAXDIM exceeded\n";
+LAbort:
     si.clear();
     siRay.clear();
-    return;
+    return false;
   }
   dim = dimArg;
   point_size = site_size = dim * sizeof(Coord);
@@ -126,10 +132,9 @@ void delaunay_tri(std::vector<d_simplex>& si, std::vector<d_simplex>& siRay, int
   // Approximation.  CG_vlist_out stuffs vpT and vpH.  Buffer overflow.
   const auto maxTets = 100 * cPt * 4 + 3;
 
-  TT T[maxTets];
-  HH H[maxTets];
-  vpH = H; // output: list of vertex indices, defining triangles on convex hull.
-  vpT = T; // output: list of vertex indices, defining tetrahedra.
+  // If vpT and vpH were on the stack, if maxTets > 200000 or so, the stack might overflow.
+  vpT = new TT[maxTets]; // output: list of vertex indices, defining tetrahedra.
+  vpH = new HH[maxTets]; // output: list of vertex indices, defining triangles on convex hull.
   iH = 0;
   iT = 0;
 
@@ -153,8 +158,11 @@ void delaunay_tri(std::vector<d_simplex>& si, std::vector<d_simplex>& siRay, int
     std::copy(first, first + d, s.begin());
     s[d] = -1;
   }
+  delete [] vpH;
+  delete [] vpT;
 
   free_hull_storage();
   for (auto i=0; i<num_blocks; ++i)
     free(site_blocks[i]);
+  return true;
 }

@@ -1,9 +1,6 @@
 // Simplicial interpolation.
 
 #include <algorithm>
-#include <cmath>
-#include <cstdlib> // exit()
-#include <limits>
 #include <random>
 
 #include "bary.h"
@@ -11,48 +8,104 @@
 #include "gacli.h"
 #include "sammon.h"
 
-#ifdef __APPLE__
-  #include <OpenGL/gl.h>
-  #include <OpenGL/glu.h>
-  #include <GLUT/glut.h>
-#else
-  #include <GL/glut.h>
-#endif
+#include "si.h"
 
+std::vector<vertex> qi; // Points in R^d.
+std::vector<vertex> pi; // Points in R^e.
 vertex qC{0}; // Constructed common point of the ray-simplices.
-std::vector<vertex> qi;
 vertex pC{0}; // What qC maps to.
-std::vector<vertex> pi;
-std::vector<d_simplex> si, siRay;
+std::vector<d_simplex> si, siRay; // Simplicial complex on qi[].
 std::vector<simplexHint> hi, hiRay;
-
-#define DATAVIZ
-#ifdef DATAVIZ
-bool fInside = false;
-d_simplex sFound;
-std::vector<double> wFound;
-vertex rFound;
-#endif
 
 void dump_simplex(const char* prefix, const d_simplex& s) {
   cout << prefix << "\n";
   for (auto i: s) dump_v("\t", i<0 ? qC : qi[i]);
 }
 
-// Scale the inputs to the hull algorithm, which uses exact integer arithmetic.
-// Outside [1e2, 1e7], ch.c++ suffers degeneracies and overshoots.
-// (Hull does this itself too, with mult_up.)
-constexpr auto scale = 1e6;
-
-std::default_random_engine rng;
-std::uniform_real_distribution<double> range(0.0, scale);
-
 void randomSites(std::vector<vertex>& vec, int dim, int n) {
   resize(vec, dim, n);
+  static std::default_random_engine rng;
+  static std::uniform_real_distribution<double> range(0.0, scale);
+  static bool fSeeded = false;
+  if (!fSeeded) {
+    fSeeded = true;
+    rng.seed(std::random_device{}());
+  }
   for (auto& v: vec) for (auto& x: v) x = range(rng);
 }
 
-vertex eval(const vertex&);
+vertex add(const vertex& v, const vertex& w) {
+  vertex r(v);
+  for (auto i=0u; i < v.size(); ++i) r[i] += w[i];
+  return r;
+}
+
+vertex subtract(const vertex& v, const vertex& w) {
+  vertex r(v);
+  for (auto i=0u; i < v.size(); ++i) r[i] -= w[i];
+  return r;
+}
+
+double magnitude2(const vertex& v) {
+  auto m = 0.0;
+  for (auto& x: v) m += sq(x);
+  return m;
+}
+
+double magnitude(const vertex& v) {
+  return sqrt(magnitude2(v));
+}
+
+void rescale(vertex& v, double z) {
+  for (auto& x: v) x *= z;
+}
+
+void setmag(vertex& v, double z) {
+  const auto m = magnitude(v);
+  if (m != 0.0)
+    rescale(v, z / m);
+}
+
+void spacedSites(std::vector<vertex>& vec, int dim, int n) {
+  randomSites(vec, dim, n);
+  // Iterate to repel points from each other.
+  // Iterate fewer times for large n, to run faster.
+  const auto iMax = 500u + 70000u / double(std::max(1, n));
+  for (auto i=iMax; i>0; --i) {
+    const auto relax = i / double(iMax);
+    for (auto& v: vec) {
+      vertex force(dim); // A direction, not a point.
+      for (const auto& w: vec) {
+	if (w == v)
+	  continue;
+	auto diff = subtract(v, w);
+	const auto inv = relax * 2.5 * sq(scale) / magnitude2(diff);
+	if (inv < 0.04) // Skip tiny forces.
+	  continue;
+	setmag(diff, inv);
+	force = add(force, diff);
+      }
+      v = add(v, force);
+    }
+    // Get the bbox of the v's.
+    constexpr auto big = std::numeric_limits<double>::max();
+    vertex vMins(dim,  big);
+    vertex vMaxs(dim, -big);
+    for (const auto& v: vec) {
+      for (auto i=0; i<dim; ++i) {
+	vMins[i] = std::min(vMins[i], v[i]);
+	vMaxs[i] = std::max(vMaxs[i], v[i]);
+      }
+    }
+    // Per dimension, stretch to a bbox of size (0.0, scale).
+    for (auto& v: vec) {
+      for (auto i=0; i<dim; ++i) {
+	v[i] -= vMins[i];
+	v[i] *= scale / (vMaxs[i] - vMins[i]);
+      }
+    }
+  }
+}
 
 // Sort each simplex's vertices, to compare multiple runs for testing,
 // and to simplify other testing.
@@ -65,35 +118,42 @@ void sort_output(std::vector<d_simplex>& rgs, bool fRay) {
   std::sort(rgs.begin(), rgs.end(), d_simplex_compare);
 }
 
-bool init(int d, int e, int cPoint) {
+bool init(int d, int e, int cPoint, qi_kind kind) {
   if (e < d) {
     printf("error: e (%d) < d (%d).\n", e, d);
     return false;
   }
-  rng.seed(std::random_device{}());
+  if (cPoint < d+1) {
+    printf("error: not enough points for even one simplex: %d points < d+1 (%d).\n", cPoint, d+1);
+    return false;
+  }
 
   // Make output sites p_i.
   randomSites(pi, e, cPoint);
 
-  // Get input sites q_i.
-  enum { q_i_Manual, q_i_SammonsMapping, q_i_GeneticAlgorithm };
-  const int q_i_kind = q_i_GeneticAlgorithm;
-  switch (q_i_kind)
+  // Choose corresponding input sites q_i.
+  switch (kind)
     {
-  case q_i_Manual:
+  case qi_kind::random:
+    // Uncorrelated with the p_i.  Uniformly distributed.
     randomSites(qi, d, cPoint);
     break;
-  case q_i_SammonsMapping:
+  case qi_kind::spaced:
+    // Uncorrelated with the p_i, but roughly equidistant.
+    spacedSites(qi, d, cPoint);
+    break;
+  case qi_kind::sammonsMapping:
     resize(qi, d, cPoint);
     computeSammon(qi, pi, scale);
     break;
-  case q_i_GeneticAlgorithm:
-    // Were tmp on the stack, e*cPoint > 200000 or so, the stack can overflow.
-    double* tmp = new double[e*cPoint];
+  case qi_kind::geneticAlgorithm:
+    // Strongly correlated with the p_i.
+    // If tmp were on the stack, if e*cPoint > 200000 or so, the stack might overflow.
+    auto tmp = new double[e*cPoint];
     for (auto i=0; i<cPoint; ++i)
     for (auto j=0; j<e; ++j)
       tmp[i*e + j] = pi[i][j];
-    Member* m = GADistanceMatrix(cPoint, e, d, tmp);
+    const auto m = GADistanceMatrix(cPoint, e, d, tmp);
     delete [] tmp;
     resize(qi, d, cPoint);
     for (int i=0; i<cPoint; ++i)
@@ -109,10 +169,12 @@ bool init(int d, int e, int cPoint) {
   // Store a triangulation of the qi's in si.
   // callhull.c++ avoids tightly coupling hull.h to this file,
   // coupling Ken Clarkson's hull code to Camille's simplicial interpolation code.
-  extern void delaunay_tri(std::vector<d_simplex>&, std::vector<d_simplex>&, int, int);
-  delaunay_tri(si, siRay, d, qi.size());
-  if (si.empty())
+  extern bool delaunay_tri(std::vector<d_simplex>&, std::vector<d_simplex>&, int, int);
+  if (!delaunay_tri(si, siRay, d, qi.size()) || si.empty()) {
+    printf("error: made no simplices.\n");
+    // Maybe d or cPoint is too small.
     return false;
+  }
   sort_output(si, false);
   sort_output(siRay, true);
 #ifdef DUMP_SIMPLICES
@@ -132,8 +194,10 @@ bool init(int d, int e, int cPoint) {
   // An index of -1 indicates the point at infinity;  we'll use that for
   // building ray-simplices.
 
-  if (d == 2 && !Edahiro_Init(qi, si))
+  if (d == 2 && !Edahiro_Init(qi, si)) {
+    printf("error: Edahiro failed to init.\n");
     return false;
+  }
 
   // Precompute some things to speed up eval().
 
@@ -163,8 +227,10 @@ bool init(int d, int e, int cPoint) {
       vC[j] /= d + 1.0;
     }
     const auto h = precomputeBary(s, vC, qi, &qC, false);
-    if (!h.s)
+    if (!h.s) {
+      printf("error: precomputeBary failed.\n");
       return false;
+    }
     hi.push_back(h);
   }
 
@@ -177,14 +243,12 @@ bool init(int d, int e, int cPoint) {
       vC[j] /= d + 1.0;
     }
     const auto h = precomputeBary(s, vC, qi, &qC, true);
-    if (!h.s)
+    if (!h.s) {
+      printf("error: ray-simplex precomputeBary failed.\n");
       return false;
+    }
     hiRay.push_back(h);
   }
-
-#ifdef DATAVIZ
-  wFound.resize(d+1);
-#endif
 
   pC = eval(qC);
   return true;
@@ -203,21 +267,20 @@ void terminate()
 // Return the simplex that contains q.
 // On error, return an arbitrary simplex.
 // Into w[0...d+1], stuff q's barycentric coordinates w.r.t. that simplex.
-const d_simplex& findSimplex(const vertex& q, double* w) {
-#ifdef DATAVIZ
-  fInside = true;
-#endif
+const d_simplex& findSimplex(const vertex& q, double* w, bool* pfInside=nullptr) {
+  if (pfInside) *pfInside = true;
+  auto failover = false;
   if (q.size() == 2) {
     // Edahiro's algorithm.  Fast.
     const int i = Edahiro_RegionFromPoint(q[0], q[1]);
     if (i >= 0) {
       if (i >= int(si.size())) {
-	printf("internal error: edahiro returned out-of-range value\n");
-	return si[0];
+	printf("\tinternal error: edahiro returned out-of-range simplex %d > %lu\n", i, si.size());
+	failover = true; goto Lfailover;
       }
       if (!computeBary(hi[i], q, w)) {
-	printf("internal error: edahiro returned wrong simplex.\n");
-	return si[0];
+	printf("\tinternal error: edahiro returned wrong simplex %d from (%.1f, %.1f).\n", i, q[0], q[1]);
+	failover = true; goto Lfailover;
       }
       return si[i];
     }
@@ -225,31 +288,35 @@ const d_simplex& findSimplex(const vertex& q, double* w) {
     // Brute force.
     // Compute q's bary-coords w.r.t. each simplex in si[].
     // If one has coordinates all nonnegative, return that one.
+Lfailover:
     for (const auto h: hi)
-      if (computeBary(h, q, w))
+      if (computeBary(h, q, w)) {
+	if (failover) {
+	  const auto it = std::find(si.begin(), si.end(), *h.s);
+	  printf("\tedahiro should have returned %ld\n", std::distance(si.begin(), it));
+	}
 	return *h.s;
+      }
   }
   // q wasn't in any simplex, so look in the ray-simplices.
-#ifdef DATAVIZ
-  fInside = false;
-#endif
+  if (pfInside) *pfInside = false;
   for (const auto h: hiRay)
     if (computeBary(h, q, w, true))
       return *h.s;
-  // This should be impossible, because the ray-simplices cover R^d.
-  // So arbitrarily choose the first simplex.
-  printf("internal error in findSimplex\n");
+  // This should be impossible, because the ray-simplices partition R^d.
+  // Arbitrarily return the first ray-simplex.
+  printf("\tinternal error in findSimplex\n");
   (void)computeBary(hi[0], q, w);
   return siRay[0];
 }
 
 // Map a d-vertex to an e-vertex.
-vertex eval(const vertex& q)
-{
+// These optional args are ugly.  A better design may appear after a few more demos have been written.
+vertex eval(const vertex& q, bool* pfInside, d_simplex* ps, vertex* pcoords, [[maybe_unused]] vertex* prFound) {
   // Find which simplex s contains q.
   const auto d = q.size();
   double w[d+1]; // q's coordinates w_j with respect to s.
-  const d_simplex& s = findSimplex(q, w);
+  const d_simplex& s = findSimplex(q, w, pfInside);
 
 #ifdef TESTING
   // Verify that q == the point whose barycoords are w[] wrt s.
@@ -266,286 +333,18 @@ vertex eval(const vertex& q)
   dist = sqrt(dist);
   if (dist > 1e-8)
     printf("warning: reconstruction error = %g\n\n\n", dist);
-#ifdef DATAVIZ
-  rFound = r;
-#endif
+  if (prFound) *prFound = r;
 #endif
 
-#ifdef DATAVIZ
-  sFound = s;
-  std::copy(w, w + d+1, wFound.begin()); // For discs.
-#endif
+  if (ps) *ps = s;
+  if (pcoords) std::copy(w, w + d+1, pcoords->begin()); // For discs.
 
   // Sum with weights w[] and vertices pi[s[]].
   const auto e = pi.front().size();
   vertex p(e);
+  pC = p; // Don't crash in "pC = eval(qC);"
   for (auto j=0u; j<e; ++j)
     for (auto i=0u; i<d+1; ++i)
       p[j] += w[i] * (s[i] < 0 ? pC : pi[s[i]])[j];
   return p;
-}
-
-#ifdef DATAVIZ
-
-constexpr auto NaN = std::numeric_limits<double>::signaling_NaN();
-vertex vQ{NaN, NaN};
-vertex vP;
-constexpr auto margin = 0.15 * scale;
-
-void drawChar(const vertex& v, char c) {
-  glRasterPos2f(v[0], v[1]);
-  glutBitmapCharacter(GLUT_BITMAP_8_BY_13, c);
-}
-
-// Convert std::array to GLdouble*.
-void glVert2(const vertex& v) {
-  glVertex2d(v[0], v[1]);
-}
-
-void drawSimplices(bool fInside) {
-  if (fInside)
-    glColor3f(1,0,.4);
-  else
-    glColor3f(.3,0,.12);
-  for (const auto& s: si) {
-    glBegin(GL_LINE_LOOP);
-    for (auto i: s) glVert2(qi[i]);
-    glEnd();
-  }
-}
-
-void drawRaysimplices(bool fInside) {
-  if (fInside)
-    glColor3f(0,.35,0);
-  else
-    glColor3f(0,0.7,0);
-  for (const auto& s: siRay) {
-    glBegin(GL_LINE_LOOP);
-      glVert2(qC);
-      glVert2(qi[s[0]]);
-      glVert2(qi[s[1]]);
-    glEnd();
-  }
-}
-
-void display()
-{
-  glClear(GL_COLOR_BUFFER_BIT);
-  // gluOrtho2D set the range for both x and y to -margin .. scale+margin.
-
-  // Mouse moved, thus assigning to vQ.
-  // GLUT can't report mouse position until then.
-  const bool fInited = !std::isnan(vQ[0]);
-
-  // Draw layers, most to least hidden.
-
-  if (fInited) {
-    // Bounding simplex (i.e., triangle).
-    glBegin(GL_TRIANGLES);
-    if (fInside) {
-      glColor3f(.25,0,.08);
-      for (auto i: sFound) glVert2(qi[i]);
-    } else {
-      glColor3f(0,.15,0);
-      glVert2(qC);
-      auto v = qi[sFound[0]];
-      v[0] += 100.0 * (v[0] - qC[0]);
-      v[1] += 100.0 * (v[1] - qC[1]);
-      glVert2(v);
-      v = qi[sFound[1]];
-      v[0] += 100.0 * (v[0] - qC[0]);
-      v[1] += 100.0 * (v[1] - qC[1]);
-      glVert2(v);
-    }
-    glEnd();
-
-    // Bar graph of output values.
-    // (If e exceeds the window's width in pixels,
-    // aliasing amusingly omits some bars.)
-    glBegin(GL_QUADS);
-    const auto e = vP.size();
-    for (auto i=0u; i<e; ++i) {
-      constexpr auto y0 = -0.5 * margin;
-      const auto y1 = vP[i];
-      const auto x0 = scale * (i+0.4)/e;
-      const auto x1 = scale * (i+0.6)/e;
-      glColor3f(0.0, 0.0, 0.1); glVertex2d(x0, y0);
-      glColor3f(0.3, 0.3, 0.7); glVertex2d(x0, y1);
-      glColor3f(0.3, 0.3, 0.7); glVertex2d(x1, y1);
-      glColor3f(0.0, 0.0, 0.1); glVertex2d(x1, y0);
-    }
-    glEnd();
-
-    // Disc around each vertex of containing simplex.
-    // Disc's radius indicates weight (barycentric coordinate) of corresponding vertex.
-    const auto d = vQ.size(); // Fussy.  It must be 2.
-    for (auto i=0u; i<=d; ++i) {
-      const auto iVertex = sFound[i];
-      const auto& v = iVertex < 0 ? qC : qi[iVertex];
-      const auto r0 = 0.07 * scale;
-      const auto r  = 0.07 * scale * sqrt(fabs(wFound[i]));
-      glPushMatrix();
-      glTranslatef(v[0], v[1], 0);
-      glColor3f(0.5,0.5,0.5);
-      glScalef(r, r, 0);
-      // This isn't worth precomputing or moving to a display list.
-      glBegin(GL_POLYGON);
-	for (auto a = 0.0; a <= 2.0*M_PI; a += 0.05)
-	  glVertex2f(cos(a), sin(a));
-      glEnd();
-      glColor3f(0.2,0.2,0.2);
-      glScalef(r0/r, r0/r, 0);
-      glBegin(GL_LINE_LOOP);
-	for (auto a = 0.0; a <= 2.0*M_PI; a += 0.05)
-	  glVertex2f(cos(a), sin(a));
-      glEnd();
-      glPopMatrix();
-    }
-  }
-
-  // Color the hull correctly.
-  if (fInside) {
-    drawRaysimplices(true);
-    drawSimplices(true);
-  } else {
-    drawSimplices(false);
-    drawRaysimplices(false);
-  }
-
-  // Vertices.
-  glColor3f(1,1,0);
-  auto i=0; for (const auto& q: qi) drawChar(q, '0' + i++);
-
-  // Center vertex of ray simplices.
-  glColor3f(1,1,1);
-  drawChar(qC, 'C');
-
-  if (fInited) {
-#ifdef TESTING
-    // Reconstructed point.
-    glColor3f(1,.2,.2);
-    drawChar(rFound, 'R');
-#endif
-    // Query point.
-    glColor3f(1,1,1);
-    drawChar(vQ, 'q');
-  }
-
-  glutSwapBuffers();
-}
-
-int xSize = 700;
-int ySize = 700;
-
-inline void XYFromMouse(double& x, double& y, int xM, int yM)
-{
-  x =       double(xM) / xSize  * (scale + 2*margin) - margin;
-  y = (1. - double(yM) / ySize) * (scale + 2*margin) - margin;
-}
-
-void mouse_hover(int x, int y)
-{
-  XYFromMouse(vQ[0], vQ[1], x, y);
-  vP = eval(vQ);
-}
-
-#ifdef MUST_HOLD_DOWN_MOUSE_BUTTON
-void mouse(int button, int state, int x, int y)
-{
-  if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
-    mouse_hover(x, y);
-}
-#endif
-
-void keyboard(unsigned char key, int /*x*/, int /*y*/)
-{
-  switch (key)
-    {
-  case 'q':
-  case 27: /* escape */
-    terminate();
-    exit(0);
-    }
-}
-
-void reshape(int w, int h)
-{
-  glViewport(0, 0, w, h);
-  xSize = w;
-  ySize = h;
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  gluOrtho2D(-margin, scale+margin, -margin, scale+margin);
-}
-
-void evalInteractive(int argc, char** argv, int d)
-{
-  // Evaluate points interactively.
-  // (For verifying the barycentric coords code.)
-
-  if (d != 2)
-    {
-    printf("oops, evalInteractive requires that d equals 2.\n");
-    return;
-    }
-
-  glutInit(&argc,argv);
-  glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-  glutInitWindowPosition(0,0);
-  glutInitWindowSize(xSize,ySize);
-  glutCreateWindow("Simplicial Interpolator");
-  glutKeyboardFunc(keyboard);
-#ifdef MUST_HOLD_DOWN_MOUSE_BUTTON
-  glutMouseFunc(mouse);
-#else
-  glutPassiveMotionFunc(mouse_hover);
-#endif
-  glutMotionFunc(mouse_hover);
-  glutReshapeFunc(reshape);
-  glutDisplayFunc(display);
-  glutIdleFunc(display);
-  glClearColor(0,0,0,0);
-  glClear(GL_COLOR_BUFFER_BIT);
-  glutSwapBuffers();
-  glutMainLoop(); // never returns
-}
-
-#else
-
-void evalAutomatic()
-{
-  // Exercise the evaluation function eval().
-  // Compiled -O2 or -O3 for a 1GHz Pentium III,
-  // this does one test in 310 usec or 3200 tests per second for e=42, d=7.
-  // For d=3, 100 usec/test or 10000 tests/sec.
-  // For d=2, 66 usec/test or 15000 tests/sec.
-
-  constexpr auto ctest = 20; // 100000 for timing tests
-  std::vector<vertex> qtest;
-  randomSites(qtest, d, ctest);
-  for (const auto& q: qtest) {
-    dump_v("query: ", q);
-    const auto p = eval(q);
-    dump_v("result: ", p);
-  }
-}
-#endif
-
-int main(int argc, char** argv) {
-  if (argc != 4) {
-    printf("usage: %s lowDim highDim numPoints\n", argv[0]);
-    return 1;
-  }
-  const auto d = atoi(argv[1]);
-  const auto e = atoi(argv[2]);
-  const auto cPoint = atoi(argv[3]);
-  if (!init(d, e, cPoint))
-    return -1;
-#ifdef DATAVIZ
-  evalInteractive(argc, argv, d);
-#else
-  evalAutomatic();
-#endif
-  terminate();
-  return 0;
 }
