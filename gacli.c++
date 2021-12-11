@@ -173,6 +173,7 @@ double ComputeSuitability(void* pv)
   // Larger distance means less suitable.
 }
 
+// Caller free()s the return value.
 Member* GADistanceMatrix(int cptArg, int cdimSrcArg, int cdimDstArg, double* rgzPt)
 {
   cpt = cptArg;
@@ -185,7 +186,7 @@ Member* GADistanceMatrix(int cptArg, int cdimSrcArg, int cdimDstArg, double* rgz
 
   InitDistanceMatrixZ(cpt, cdimSrc, rgzDistSrc, rgzPt);
 
-  static auto pmemberBest = (Member*)GA(
+  const auto pmemberBest = (Member*)GA(
     sizeof(short) * cpt * cdimDst,
     GenerateRandom,
     MutateRandom,
@@ -193,7 +194,7 @@ Member* GADistanceMatrix(int cptArg, int cdimSrcArg, int cdimDstArg, double* rgz
     ComputeSuitability,
     0.0,
     50,
-    0.8 /* timeout, in seconds */
+    0.6 /* timeout, in seconds */
   );
 
   for (auto i=0; i<cpt*cdimDst; ++i)

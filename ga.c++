@@ -236,7 +236,7 @@ void Mutate(int count, int cPop, long cIter)
     }
 }
 
-char* pbBuf = NULL;
+// Caller free()s the return value.
 void* GA(
   int cbMemberArg,
   void (*pfnGenerateRandom)(void* pv),
@@ -252,7 +252,6 @@ void* GA(
   const auto tQuit = system_clock::now() + microseconds(long(tMaxSec * 1e6));
 
   cbMember = cbMemberArg;
-  pbBuf = NULL;
   if (cbMember % sizeof(long) != 0)
     {
     // round up cbMember to nearest long.
@@ -269,9 +268,6 @@ void* GA(
   cBest = cBestArg;
 
   AllocPopulation(MAXPOP);
-  if (pbBuf != NULL)
-    free(pbBuf);
-  pbBuf = (char*)malloc(cbMember);
   srandom(42);
   int cPopulation = MAXPOP;
   ProduceInitialMembers(cPopulation);
@@ -280,6 +276,7 @@ void* GA(
   if (iSolution != -1)
     printf("found it right away.\n");
 #endif
+  const auto pbBuf = malloc(cbMember);
   long cIter = 0L;
   while(iSolution == -1 && cIter <= cMaxGen)
     {
