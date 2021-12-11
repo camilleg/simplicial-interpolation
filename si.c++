@@ -289,7 +289,7 @@ const d_simplex& findSimplex(const vertex& q, double* w, bool* pfInside=nullptr)
     // Compute q's bary-coords w.r.t. each simplex in si[].
     // If one has coordinates all nonnegative, return that one.
 Lfailover:
-    for (const auto h: hi)
+    for (const auto& h: hi)
       if (computeBary(h, q, w)) {
 	if (failover) {
 	  const auto it = std::find(si.begin(), si.end(), *h.s);
@@ -300,7 +300,7 @@ Lfailover:
   }
   // q wasn't in any simplex, so look in the ray-simplices.
   if (pfInside) *pfInside = false;
-  for (const auto h: hiRay)
+  for (const auto& h: hiRay)
     if (computeBary(h, q, w, true))
       return *h.s;
   // This should be impossible, because the ray-simplices partition R^d.
