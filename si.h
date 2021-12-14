@@ -32,11 +32,6 @@ extern vertex pC; // What qC maps to.
 extern std::vector<vertex> pi;
 extern std::vector<d_simplex> si, siRay;
 
-// Scale the inputs to the hull algorithm, which uses exact integer arithmetic.
-// Outside [1e2, 1e7], ch.c++ suffers degeneracies and overshoots.
-// (Hull does this itself too, with mult_up.)
-constexpr auto scale = 1e6;
-
 // Utilities.
 
 void randomSites(std::vector<vertex>&, int dim, int n);

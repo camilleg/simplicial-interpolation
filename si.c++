@@ -22,6 +22,11 @@ void dump_simplex(const char* prefix, const d_simplex& s) {
   for (auto i: s) dump_v("\t", i<0 ? qC : qi[i]);
 }
 
+// Scale the inputs to the hull algorithm, which uses exact integer arithmetic.
+// Outside [1e2, 1e7], ch.c++ suffers degeneracies and overshoots.
+// (Hull does this itself too, with mult_up.)
+constexpr auto scale = 1e6;
+
 void randomSites(std::vector<vertex>& vec, int dim, int n) {
   resize(vec, dim, n);
   static std::default_random_engine rng;

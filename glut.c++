@@ -22,7 +22,8 @@ vertex rFound;
 constexpr auto NaN = std::numeric_limits<double>::signaling_NaN();
 vertex vQ{NaN, NaN};
 vertex vP;
-constexpr auto margin = 0.2 * scale;
+double scale = NaN;
+double margin = NaN;
 
 void drawChar(const vertex& v, char c) {
   glRasterPos2f(v[0], v[1]);
@@ -96,7 +97,7 @@ void display() {
     glBegin(GL_QUADS);
     const auto e = vP.size();
     for (auto i=0u; i<e; ++i) {
-      constexpr auto y0 = -0.5 * margin;
+      const auto y0 = -0.5 * margin;
       const auto y1 = vP[i];
       const auto x0 = scale * (i+0.4)/e;
       const auto x1 = scale * (i+0.6)/e;
@@ -208,6 +209,12 @@ int main(int argc, char** argv) {
   wFound.resize(d+1);
   if (!init(d, e, cPoint, qi_kind::spaced))
     return 1;
+
+  // Assumes that the smallest x and smallest y are near zero.
+  scale = 0.0;
+  for (const auto& q: qi)
+    scale = std::max(scale, std::max(q[0], q[1]));
+  margin = 0.2 * scale;
 
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
   glutInitWindowPosition(0,0);
