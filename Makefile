@@ -2,16 +2,17 @@ MAKEFLAGS += --jobs=99
 UNAME_S := $(shell sh -c 'uname -s 2>/dev/null')
 
 CFLAGS := -std=c++17 -O3 -W -Wall -Werror -Weffc++
+LIBS :=
 ifeq ($(UNAME_S),Darwin)
   CFLAGS += -DGL_SILENCE_DEPRECATION # macOS 11.2
   CC = clang++
-  LIBS := -framework GLUT -framework OpenGL
+  LIBS_GLUT := -framework GLUT -framework OpenGL
   # For OS X 10.3.9:
   # CC = g++
   # CFLAGS += -I/usr/X11R6/include -I/System/Library/Frameworks/GLUT.framework/Versions/A/Headers
 else
   CC = g++
-  LIBS := -lglut -lGLU -lGL
+  LIBS_GLUT := -lglut -lGLU -lGL
 endif
 
 # Optional debugging options for CFLAGS.
@@ -36,7 +37,7 @@ demo: glut
 selftest: $(OBJS_TEST)
 	$(CC) -o $@ $^ $(LIBS)
 glut: $(OBJS_GLUT)
-	$(CC) -o $@ $^ $(LIBS)
+	$(CC) -o $@ $^ $(LIBS) $(LIBS_GLUT)
 
 clean:
 	-rm -rf $(EXES) $(OBJS) .depend
