@@ -4,7 +4,7 @@
 
 #include "bary.h"
 
-static int d = -1;
+static auto d = -1;
 
 // Solve Ax=b, where A is d*d.  Returns false iff A is singular.
 // Crout's algorithm replaces A with its LU decomposition.
