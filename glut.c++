@@ -1,4 +1,4 @@
-// Interactive demo, using GLUT or freeglut.
+// Interactive demo, using freeglut.
 // https://www.opengl.org/resources/libraries/glut/spec3/spec3.html
 // http://freeglut.sourceforge.net/
 
@@ -9,7 +9,7 @@
   #include <OpenGL/glu.h>
   #include <GLUT/glut.h>
 #else
-  #include <GL/glut.h>
+  #include <GL/freeglut.h> // Instead of glut.h, to get glutLeaveMainLoop().
 #endif
 
 #include "si.h"
@@ -171,7 +171,7 @@ void keyboard(unsigned char key, int /*x*/, int /*y*/) {
   case 'q':
   case 27: // Esc
     terminate();
-    exit(0);
+    glutLeaveMainLoop();
   }
 }
 
@@ -216,6 +216,7 @@ int main(int argc, char** argv) {
     scale = std::max(scale, std::max(q[0], q[1]));
   margin = 0.2 * scale;
 
+  glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
   glutInitWindowPosition(0,0);
   glutInitWindowSize(xSize, ySize);
@@ -229,7 +230,6 @@ int main(int argc, char** argv) {
   glClearColor(0,0,0,0);
   glClear(GL_COLOR_BUFFER_BIT);
   glutSwapBuffers();
-  glutMainLoop(); // never returns
-
+  glutMainLoop();
   return 0;
 }
