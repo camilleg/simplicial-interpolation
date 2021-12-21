@@ -3,14 +3,7 @@
 // http://freeglut.sourceforge.net/
 
 #include <cmath>
-
-#ifdef __APPLE__
-  #include <OpenGL/gl.h>
-  #include <OpenGL/glu.h>
-  #include <GLUT/glut.h>
-#else
-  #include <GL/freeglut.h> // Instead of glut.h, to get glutLeaveMainLoop().
-#endif
+#include <GL/freeglut.h> // Instead of glut.h, to get glutLeaveMainLoop().
 
 #include "si.h"
 
@@ -171,7 +164,11 @@ void keyboard(unsigned char key, int /*x*/, int /*y*/) {
   case 'q':
   case 27: // Esc
     terminate();
+#ifdef __APPLE__
+    exit(0);
+#else
     glutLeaveMainLoop();
+#endif
   }
 }
 
@@ -216,7 +213,12 @@ int main(int argc, char** argv) {
     scale = std::max(scale, std::max(q[0], q[1]));
   margin = 0.2 * scale;
 
+#ifndef __APPLE__
+  // Freeglut bug.  This and glutLeaveMainLoop() abort, because !fgState.Initialised,
+  // because src/osx is empty and in particular lacks fg_init_osx.c,
+  // whose fgPlatformInitialize() would have set fgState.Initialised.
   glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
+#endif
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
   glutInitWindowPosition(0,0);
   glutInitWindowSize(xSize, ySize);

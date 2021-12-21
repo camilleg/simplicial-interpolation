@@ -20,11 +20,12 @@ and whose license is similar to the MIT License.
 
 On Windows 10, install [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10), using the [Ubuntu 20](https://www.microsoft.com/store/apps/9n6svws3rx71) distro.
 
-On Linux or Windows, `sudo apt install libgl-dev libgl1-mesa-dev freeglut3-dev`.
-
-On Linux, or Windows, or macOS 10.3+ (2003+), `make test`
+On Linux, Windows, or macOS 10.3+ (2003+), `make test`
 
 ### How to run the demo
+
+On Linux or Windows, `sudo apt install libgl-dev libgl1-mesa-dev freeglut3-dev`.  
+On Mac, `brew install freeglut`.
 
 - On Windows, install an X server such as [VcXsrv](https://sourceforge.net/projects/vcxsrv/).  
 - `make demo`, or, to specify the high dimension *e* (say, 20) and the number of points (say, 100), `./glut 20 100`  
