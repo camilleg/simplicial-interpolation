@@ -29,7 +29,7 @@ On Mac, `brew install freeglut`.
 
 - On Windows, install an X server such as [VcXsrv](https://sourceforge.net/projects/vcxsrv/).  
 - `make demo`, or, to specify the high dimension *e* (say, 20) and the number of points (say, 100), `./glut 20 100`  
-- Move the mouse around over the window.  
+- Move the mouse around over the window.  If you like, zoom with the scroll wheel.  
 - To exit, hit q or the escape key.  
 
 The mouse pointer `q` ("query") is interpreted as a weighted sum
