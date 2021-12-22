@@ -17,6 +17,7 @@ vertex vQ{NaN, NaN};
 vertex vP;
 double scale = NaN;
 double margin = NaN;
+double dmargin = NaN;
 
 void drawChar(const vertex& v, char c) {
   glRasterPos2f(v[0], v[1]);
@@ -168,26 +169,48 @@ void keyboard(unsigned char key, int /*x*/, int /*y*/) {
   }
 }
 
-int xSize = 950;
-int ySize = 950;
+// Dimensions of window.
+auto xSize = 950;
+auto ySize = 950;
 
 void XYFromMouse(double& x, double& y, int xM, int yM) {
   x =       double(xM) / xSize  * (scale + 2*margin) - margin;
   y = (1. - double(yM) / ySize) * (scale + 2*margin) - margin;
 }
 
+constexpr auto badMouse = std::numeric_limits<int>::max();
+auto xMouse = badMouse;
+auto yMouse = badMouse;
 void mouse_hover(int x, int y) {
-  XYFromMouse(vQ[0], vQ[1], x, y);
+  XYFromMouse(vQ[0], vQ[1], xMouse=x, yMouse=y);
   vP = eval(vQ, &fInside, &sFound, &wFound, &rFound);
+}
+void mouse_kick() {
+  if (xMouse != badMouse && yMouse != badMouse)
+    mouse_hover(xMouse, yMouse);
 }
 
 void reshape(int w, int h) {
-  glViewport(0, 0, w, h);
-  xSize = w;
-  ySize = h;
+  glViewport(0, 0, xSize=w, ySize=h);
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   gluOrtho2D(-margin, scale+margin, -margin, scale+margin);
+}
+
+void mousewheel(int button, int state, int /*x*/, int /*y*/) {
+  // glutMouseWheelFunc() isn't yet reliably implemented on X11.
+  // 3 and 4 is common for mice, and for macOS trackpad vertical scrolling.
+  // But some mice use 5 and 6.
+  if (button == 3 || button == 4) {
+    if (state == GLUT_UP)
+      return;
+    margin += button == 3 ? -dmargin : dmargin;
+    // reshape(xSize, ySize) would work, but only after an actual window resize.  Freeglut bug.
+    reshape(xSize-1, ySize);
+    reshape(xSize+1, ySize);
+    // During a zoom, prevent vQ from drifting away from mouse cursor.
+    mouse_kick();
+  }
 }
 
 int main(int argc, char** argv) {
@@ -208,6 +231,7 @@ int main(int argc, char** argv) {
   for (const auto& q: qi)
     scale = std::max(scale, std::max(q[0], q[1]));
   margin = 0.2 * scale;
+  dmargin = 0.15 * margin;
 
 #ifndef __APPLE__
   // Freeglut bug.  This and glutLeaveMainLoop() abort, because !fgState.Initialised,
@@ -222,6 +246,7 @@ int main(int argc, char** argv) {
   glutKeyboardFunc(keyboard);
   glutPassiveMotionFunc(mouse_hover);
   glutMotionFunc(mouse_hover);
+  glutMouseFunc(mousewheel);
   glutReshapeFunc(reshape);
   glutDisplayFunc(display);
   glutIdleFunc(display);
