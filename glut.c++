@@ -137,10 +137,6 @@ void display() {
     drawRaysimplices(false);
   }
 
-  // Vertices.
-  glColor3f(1,1,0);
-  auto i=0; for (const auto& q: qi) drawChar(q, '0' + i++);
-
   // Center vertex of ray simplices.
   glColor3f(1,1,1);
   drawChar(qC, 'C');
