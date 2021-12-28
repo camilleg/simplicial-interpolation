@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
       return -1;
 
     std::vector<vertex> qtest;
-    randomSites(qtest, d, 5);
+    randomSites(qtest, d, 5, 1e6);
     for (const auto& q: qtest) {
       dump_v("   query ", q);
       const auto p = eval(q);

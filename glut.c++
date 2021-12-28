@@ -8,6 +8,7 @@
 #include "si.h"
 
 bool fInside = true;
+bool fQuit = false;
 d_simplex sFound;
 vertex wFound; // Actually d+1 weights for a weighted sum.
 vertex rFound;
@@ -56,6 +57,8 @@ void drawRaysimplices(bool fInside) {
 }
 
 void display() {
+  if (fQuit)
+    return;
   glClear(GL_COLOR_BUFFER_BIT);
   // gluOrtho2D set the range for both x and y to -margin .. scale+margin.
 
@@ -92,7 +95,7 @@ void display() {
     const auto e = vP.size();
     for (auto i=0u; i<e; ++i) {
       const auto y0 = -0.5 * margin;
-      const auto y1 = vP[i];
+      const auto y1 = scale * vP[i];
       const auto x0 = scale * (i+0.4)/e;
       const auto x1 = scale * (i+0.6)/e;
       glColor3f(0.0, 0.0, 0.1); glVertex2d(x0, y0);
@@ -160,6 +163,7 @@ void keyboard(unsigned char key, int /*x*/, int /*y*/) {
   switch (key) {
   case 'q':
   case 27: // Esc
+    fQuit = true; // Prevent display() from reading the cleared qi[] etc.
     terminate();
 #ifdef __APPLE__
     exit(0);

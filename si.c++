@@ -22,21 +22,16 @@ void dump_simplex(const char* prefix, const d_simplex& s) {
   for (auto i: s) dump_v("\t", i<0 ? qC : qi[i]);
 }
 
-// Scale the inputs to the hull algorithm, which uses exact integer arithmetic.
-// Outside [1e2, 1e7], ch.c++ suffers degeneracies and overshoots.
-// (Hull does this itself too, with mult_up.)
-constexpr auto scale = 1e6;
-
-void randomSites(std::vector<vertex>& vec, int dim, int n) {
+void randomSites(std::vector<vertex>& vec, int dim, int n, double k) {
   resize(vec, dim, n);
   static std::default_random_engine rng;
-  static std::uniform_real_distribution<double> range(0.0, scale);
+  static std::uniform_real_distribution<double> range(0.0, 1.0);
   static bool fSeeded = false;
   if (!fSeeded) {
     fSeeded = true;
     rng.seed(std::random_device{}());
   }
-  for (auto& v: vec) for (auto& x: v) x = range(rng);
+  for (auto& v: vec) for (auto& x: v) x = k * range(rng);
 }
 
 vertex add(const vertex& v, const vertex& w) {
@@ -71,8 +66,13 @@ void setmag(vertex& v, double z) {
     rescale(v, z / m);
 }
 
+// Scale the inputs to the hull algorithm, which uses exact integer arithmetic.
+// Outside [1e2, 1e7], ch.c++ suffers degeneracies and overshoots.
+// (Hull does this itself too, with mult_up.)
+constexpr auto hullScale = 1e6;
+
 void spacedSites(std::vector<vertex>& vec, int dim, int n) {
-  randomSites(vec, dim, n);
+  randomSites(vec, dim, n, hullScale);
   // Iterate to repel points from each other.
   // Iterate fewer times for large n, to run faster.
   const auto iMax = 500u + 70000u / double(std::max(1, n));
@@ -84,7 +84,7 @@ void spacedSites(std::vector<vertex>& vec, int dim, int n) {
 	if (w == v)
 	  continue;
 	auto diff = subtract(v, w);
-	const auto inv = relax * 2.5 * sq(scale) / magnitude2(diff);
+	const auto inv = relax * 2.5 * sq(hullScale) / magnitude2(diff);
 	if (inv < 0.04) // Skip tiny forces.
 	  continue;
 	setmag(diff, inv);
@@ -102,11 +102,11 @@ void spacedSites(std::vector<vertex>& vec, int dim, int n) {
 	vMaxs[i] = std::max(vMaxs[i], v[i]);
       }
     }
-    // Per dimension, stretch to a bbox of size (0.0, scale).
+    // Per dimension, stretch to a bbox of size (0.0, hullScale).
     for (auto& v: vec) {
       for (auto i=0; i<dim; ++i) {
 	v[i] -= vMins[i];
-	v[i] *= scale / (vMaxs[i] - vMins[i]);
+	v[i] *= hullScale / (vMaxs[i] - vMins[i]);
       }
     }
   }
@@ -134,14 +134,14 @@ bool init(int d, int e, int cPoint, qi_kind kind) {
   }
 
   // Make output sites p_i.
-  randomSites(pi, e, cPoint);
+  randomSites(pi, e, cPoint, 1.0);
 
   // Choose corresponding input sites q_i.
   switch (kind)
     {
   case qi_kind::random:
     // Uncorrelated with the p_i.  Uniformly distributed.
-    randomSites(qi, d, cPoint);
+    randomSites(qi, d, cPoint, hullScale);
     break;
   case qi_kind::spaced:
     // Uncorrelated with the p_i, but roughly equidistant.
@@ -149,7 +149,7 @@ bool init(int d, int e, int cPoint, qi_kind kind) {
     break;
   case qi_kind::sammonsMapping:
     resize(qi, d, cPoint);
-    computeSammon(qi, pi, scale);
+    computeSammon(qi, pi, hullScale);
     break;
   case qi_kind::geneticAlgorithm:
     // Strongly correlated with the p_i.
@@ -163,7 +163,7 @@ bool init(int d, int e, int cPoint, qi_kind kind) {
     resize(qi, d, cPoint);
     for (int i=0; i<cPoint; ++i)
     for (int j=0; j<d; ++j)
-      qi[i][j] = scale * double(m->rgl[i*d + j]) / sHuge;
+      qi[i][j] = hullScale * double(m->rgl[i*d + j]) / sHuge;
     free(m);
     break;
     }

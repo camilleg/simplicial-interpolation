@@ -34,7 +34,7 @@ extern std::vector<d_simplex> si, siRay;
 
 // Utilities.
 
-void randomSites(std::vector<vertex>&, int dim, int n);
+void randomSites(std::vector<vertex>&, int dim, int n, double k);
 
 template <typename T> T sq(const T& _) {
   return _*_;
@@ -48,8 +48,7 @@ template <typename T> void resize(T& vec, int dim, int n) {
 void dump_simplex(const char* prefix, const d_simplex&);
 
 template <class T> void dump_v(const char* prefix, const T& v) {
-  cout.setf(std::ios_base::fixed);
-  cout << prefix << std::setprecision(0); // Values are typically 0 to 1e6.
+  cout << prefix << std::setprecision(6);
   for (auto i: v) cout << i << " ";
   cout << "\n";
 }
