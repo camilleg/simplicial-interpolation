@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
     if (!init(d, e, n, qi_kind::geneticAlgorithm))
       return -1;
 
-    std::vector<vertex> qtest;
+    vector<vertex> qtest;
     randomSites(qtest, d, 5, 1e6);
     for (const auto& q: qtest) {
       dump_v("   query ", q);

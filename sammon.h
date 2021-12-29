@@ -1,3 +1,3 @@
 #include "si.h"
 
-void computeSammon(std::vector<vertex>&, const std::vector<vertex>&, const double);
+void computeSammon(vector<vertex>&, const vector<vertex>&, const double);

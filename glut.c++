@@ -25,7 +25,7 @@ void drawChar(const vertex& v, char c) {
   glutBitmapCharacter(GLUT_BITMAP_8_BY_13, c);
 }
 
-// Convert std::vector to GLdouble*.
+// Convert vector to GLdouble*.
 void glVert2(const vertex& v) {
   glVertex2d(v[0], v[1]);
 }

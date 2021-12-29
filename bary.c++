@@ -148,7 +148,7 @@ double determinant(const double* m, int n) {
 }
 
 simplexHint precomputeBary(const d_simplex& s, const vertex& centroid,
-  const std::vector<vertex>& rgv, const vertex* raysCentroid, [[maybe_unused]] bool fRaySimplex)
+  const vector<vertex>& rgv, const vertex* raysCentroid, [[maybe_unused]] bool fRaySimplex)
 {
   d = centroid.size();
   simplexHint h = {}; // h.s == nullptr, so h is (not yet) valid.

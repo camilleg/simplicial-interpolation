@@ -7,7 +7,7 @@
 #include "sammon.h"
 #include "util.h"
 
-void computeSammon(std::vector<vertex>& qi, const std::vector<vertex>& pi, const double scalar)
+void computeSammon(vector<vertex>& qi, const vector<vertex>& pi, const double scalar)
 {
   // Modification of the published algorithm:  store the squares of
   // the distances, instead of the distances themselves.

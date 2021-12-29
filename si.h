@@ -5,36 +5,37 @@
 #include <iostream>
 #include <vector>
 using std::cout;
+using std::vector;
 
 #undef TESTING
 
 // Either a d-vertex or an e-vertex.
-using vertex = std::vector<double>;
+using vertex = vector<double>;
 
 // Stores indices into the d-vertices qi[], so of size d+1.
 // -1 indicates qC, the common center point of the ray-simplices.
-using d_simplex = std::vector<int>;
+using d_simplex = vector<int>;
 
 // Inward-pointing normal vector of, and a point on, each facet of a simplex.
 // All vectors have size d+1.
 // Precomputing these speeds up computation of barycentric coordinates.
 struct simplexHint {
   const d_simplex* s;
-  std::vector<vertex> facetnormal;
-  std::vector<const vertex*> facetvertex;
-  std::vector<double> facetvolume;
+  vector<vertex> facetnormal;
+  vector<const vertex*> facetvertex;
+  vector<double> facetvolume;
 };
 
 // For testing and demos.
 extern vertex qC; // Constructed common point of the ray-simplices.
-extern std::vector<vertex> qi;
+extern vector<vertex> qi;
 extern vertex pC; // What qC maps to.
-extern std::vector<vertex> pi;
-extern std::vector<d_simplex> si, siRay;
+extern vector<vertex> pi;
+extern vector<d_simplex> si, siRay;
 
 // Utilities.
 
-void randomSites(std::vector<vertex>&, int dim, int n, double k);
+void randomSites(vector<vertex>&, int dim, int n, double scale);
 
 template <typename T> T sq(const T& _) {
   return _*_;

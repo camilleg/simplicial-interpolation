@@ -10,19 +10,19 @@
 
 #include "si.h"
 
-std::vector<vertex> qi; // Points in R^d.
-std::vector<vertex> pi; // Points in R^e.
+vector<vertex> qi; // Points in R^d.
+vector<vertex> pi; // Points in R^e.
 vertex qC{0}; // Constructed common point of the ray-simplices.
 vertex pC{0}; // What qC maps to.
-std::vector<d_simplex> si, siRay; // Simplicial complex on qi[].
-std::vector<simplexHint> hi, hiRay;
+vector<d_simplex> si, siRay; // Simplicial complex on qi[].
+vector<simplexHint> hi, hiRay;
 
 void dump_simplex(const char* prefix, const d_simplex& s) {
   cout << prefix << "\n";
   for (auto i: s) dump_v("\t", i<0 ? qC : qi[i]);
 }
 
-void randomSites(std::vector<vertex>& vec, int dim, int n, double k) {
+void randomSites(vector<vertex>& vec, int dim, int n, double scale) {
   resize(vec, dim, n);
   static std::default_random_engine rng;
   static std::uniform_real_distribution<double> range(0.0, 1.0);
@@ -31,7 +31,7 @@ void randomSites(std::vector<vertex>& vec, int dim, int n, double k) {
     fSeeded = true;
     rng.seed(std::random_device{}());
   }
-  for (auto& v: vec) for (auto& x: v) x = k * range(rng);
+  for (auto& v: vec) for (auto& x: v) x = scale * range(rng);
 }
 
 vertex add(const vertex& v, const vertex& w) {
@@ -71,7 +71,7 @@ void setmag(vertex& v, double z) {
 // (Hull does this itself too, with mult_up.)
 constexpr auto hullScale = 1e6;
 
-void spacedSites(std::vector<vertex>& vec, int dim, int n) {
+void spacedSites(vector<vertex>& vec, int dim, int n) {
   randomSites(vec, dim, n, hullScale);
   // Iterate to repel points from each other.
   // Iterate fewer times for large n, to run faster.
@@ -117,7 +117,7 @@ void spacedSites(std::vector<vertex>& vec, int dim, int n) {
 bool d_simplex_compare(const d_simplex& a, const d_simplex& b) {
   return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
 }
-void sort_output(std::vector<d_simplex>& rgs, bool fRay) {
+void sort_output(vector<d_simplex>& rgs, bool fRay) {
   for (auto& s: rgs)
     std::sort(s.begin(), s.end() - (fRay ? 1 : 0));
   std::sort(rgs.begin(), rgs.end(), d_simplex_compare);
@@ -174,7 +174,7 @@ bool init(int d, int e, int cPoint, qi_kind kind) {
   // Store a triangulation of the qi's in si.
   // callhull.c++ avoids tightly coupling hull.h to this file,
   // coupling Ken Clarkson's hull code to Camille's simplicial interpolation code.
-  extern bool delaunay_tri(std::vector<d_simplex>&, std::vector<d_simplex>&, int, int);
+  extern bool delaunay_tri(vector<d_simplex>&, vector<d_simplex>&, int, int);
   if (!delaunay_tri(si, siRay, d, qi.size()) || si.empty()) {
     printf("error: made no simplices.\n");
     // Maybe d or cPoint is too small.

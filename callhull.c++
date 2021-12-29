@@ -49,7 +49,7 @@ site read_next_site(long j) {
     return nullptr; // end of list
   hull_p = new_site(hull_p,j);
   for (auto i=0; i<dim; ++i) {
-    extern std::vector<vertex> qi;
+    extern vector<vertex> qi;
     hull_p[i] = floor(mult_up * qi[j][i] + 0.5);    // these are the input points.
     if (hull_p[i] < mins[i])
       mins[i] = hull_p[i];
@@ -64,7 +64,7 @@ site get_site_offline(long i)
   return i>=num_sites ? nullptr : site_blocks[i/BLOCKSIZE] + (i%BLOCKSIZE)*dim;
 }
 
-std::vector<long> shufmat;
+vector<long> shufmat;
 void make_shuffle() {
   shufmat.resize(num_sites + 1);
   std::iota(shufmat.begin(), shufmat.end(), 0);
@@ -105,7 +105,7 @@ void resetEverything()
   mult_up = 1.0; // Already scaled by si.c++'s constexpr auto scale = 1e6.
 }
 
-bool delaunay_tri(std::vector<d_simplex>& si, std::vector<d_simplex>& siRay, int dimArg, int cPt) {
+bool delaunay_tri(vector<d_simplex>& si, vector<d_simplex>& siRay, int dimArg, int cPt) {
   resetEverything();
   if (cPt <= 1) {
     // If cPt==1, iH==iT==1 but vpH and vpT remain uninitialized.
@@ -143,7 +143,7 @@ LAbort:
   make_output(root, visit_hull, facets_print, &CG_vlist_out, stdout);
   // CG_vlist_out wrote output to vpT,iT (simplices aka tets) and vpH,iH (ray-simplices aka hull, without the -1).
 
-  extern std::vector<vertex> qi;
+  extern vector<vertex> qi;
   const auto d = qi.front().size();
   resize(si,    d+1, iT); // aka ctet
   resize(siRay, d+1, iH); // aka ctri

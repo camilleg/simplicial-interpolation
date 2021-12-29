@@ -559,7 +559,7 @@ inline int Tweak(const int ir)
 // Zero-based, not 1-based.
 // Permuting of points so they are sorted by y-coordinate.
 
-bool Edahiro_Init(const std::vector<vertex>& qi, const std::vector<d_simplex>& si)
+bool Edahiro_Init(const vector<vertex>& qi, const vector<d_simplex>& si)
 {
   // Read the output of Hull algorithm.
   // nv, x's and y's, ntri, itri's.
