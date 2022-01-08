@@ -186,6 +186,8 @@ constexpr auto badMouse = std::numeric_limits<int>::max();
 auto xMouse = badMouse;
 auto yMouse = badMouse;
 void mouse_hover(int x, int y) {
+  if (fQuit)
+    return;
   XYFromMouse(vQ[0], vQ[1], xMouse=x, yMouse=y);
   vP = eval(vQ, &fInside, &sFound, &wFound, &rFound);
 }
