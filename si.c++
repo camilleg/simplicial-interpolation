@@ -311,8 +311,9 @@ Lfailover:
   // This should be impossible, because the ray-simplices partition R^d.
   // Arbitrarily return the first ray-simplex.
   printf("\tinternal error in findSimplex\n");
-  (void)computeBary(hi[0], q, w);
-  return siRay[0];
+  const auto& h = hiRay[0];
+  (void)computeBary(h, q, w, true); // It returned false a moment ago.
+  return *h.s;
 }
 
 // Map a d-vertex to an e-vertex.
