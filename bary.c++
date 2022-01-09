@@ -171,6 +171,7 @@ simplexHint precomputeBary(const d_simplex& s, const vertex& centroid,
   resize(h.facetnormal, d, d+1);
   h.facetvertex.resize(d+1);
   h.facetvolume.resize(d+1);
+  const auto fudge = pow(10.0, d*5-4); // Avoid astronomical volumes when d>3.
   for (int ifacet=0; ifacet<d+1; ++ifacet)
     {
     // Compute the inward-pointing unit-length normal to the facet.
@@ -309,6 +310,7 @@ simplexHint precomputeBary(const d_simplex& s, const vertex& centroid,
     // Optimization: if we cached/hashed these, we'd avoid computing each facet twice.
 
     // Compute the (d-1)-volume of each facet rgvFacet[0,...,d-1].
+    auto& vol = h.facetvolume[ifacet];
     switch (d)
       {
     case 2:
@@ -316,7 +318,7 @@ simplexHint precomputeBary(const d_simplex& s, const vertex& centroid,
 	// Fast: Euclidean distance from rgvFacet[0] to rgvFacet[1].
 	const auto& a = *rgvFacet[0];
 	const auto& b = *rgvFacet[1];
-	h.facetvolume[ifacet] = hypot(b[0]-a[0], b[1]-a[1]);
+	vol = hypot(b[0]-a[0], b[1]-a[1]);
 	break;
 	}
 
@@ -328,17 +330,18 @@ simplexHint precomputeBary(const d_simplex& s, const vertex& centroid,
 	const auto& b = *rgvFacet[1];
 	const auto& c = *rgvFacet[2];
 	// Side lengths.
-	const double la = sqrt(sq(b[0]-c[0]) + sq(b[1]-c[1]) + sq(b[2]-c[2]));
-	const double lb = sqrt(sq(c[0]-a[0]) + sq(c[1]-a[1]) + sq(c[2]-a[2]));
-	const double lc = sqrt(sq(b[0]-a[0]) + sq(b[1]-a[1]) + sq(b[2]-a[2]));
+	const auto la = sqrt(sq(b[0]-c[0]) + sq(b[1]-c[1]) + sq(b[2]-c[2]));
+	const auto lb = sqrt(sq(c[0]-a[0]) + sq(c[1]-a[1]) + sq(c[2]-a[2]));
+	const auto lc = sqrt(sq(b[0]-a[0]) + sq(b[1]-a[1]) + sq(b[2]-a[2]));
 	// Heron's formula.
-	const double s = (la + lb + lc) * .5;
-	h.facetvolume[ifacet] = sqrt(s * (s-la) * (s-lb) * (s-lc));
+	const auto s = (la + lb + lc) * 0.5;
+	vol = sqrt(s * (s-la) * (s-lb) * (s-lc));
 	break;
 	}
 
     default:
       // Use a generalization of Heron's formula, the Cayley-Menger determinant.
+      // This also works for d=2 and d=3, but it's slow.
       double m[(d+1)*(d+1)];
       // Optimization:  m[] is symmetric in its main diagonal,
       // so we could compute only one half and reflect it into the other.
@@ -364,22 +367,22 @@ simplexHint precomputeBary(const d_simplex& s, const vertex& centroid,
 	m[(i+1)*(d+1)+(j+1)] = _;
 	}
 
-      constexpr double scalars[14] = {
-        -1.,2.,-16.,288.,-9216.,460800.,-33177600.,3251404800.,-416179814400.,
-        67421129932800.,-13484225986560000.,3263182688747520000.,
-	-939796614359285760000.,317651255653438586880000. };
-      const auto scalar = (d-1 <= 13) ? scalars[d-1] :
-        // Should really compute Sloane's sequence A055546: (-1)^(j+1) / (2^j * (j!)^2).
-	// But approximation is okay (up to float overflow or underflow):
-	// relative, not absolute, volumes is what matters
-	// since we'll normalize them anyways (to sum to 1).
-	1e30; // vague approximation
+      // Sloane's sequence A055546, (-1)^(d+1) / (2^d * (d!)^2).
+      // More values, for up to d=100, are at https://oeis.org/A055546/b055546.txt.
+      constexpr double scalars[16] = {
+        -1, 2, -16, 288, -9216, 460800, -33177600, 3251404800, -416179814400,
+        67421129932800, -13484225986560000, 3263182688747520000,
+	-939796614359285760000.0, 317651255653438586880000.0,
+        124519292216147926056960000.0, 56033681497266566725632000000.0 };
+      const auto scalar = (d-1 < 16) ? scalars[d-1] : 1e40;
+	// For huge d, approximation is okay, up to float overflow or underflow.
+	// Only relative volumes matter because we'll normalize them anyways (to sum to 1).
 
-      h.facetvolume[ifacet] = sqrt(determinant(m, d+1) / scalar);
+      vol = sqrt(determinant(m, d+1) / scalar) / fudge;
       break;
       }
 #ifdef TESTING
-    if (h.facetvolume[ifacet] < 0.)
+    if (vol < 0.0)
       printf("internal error in computing facet volumes.\n");
 #endif
     }
@@ -389,6 +392,7 @@ simplexHint precomputeBary(const d_simplex& s, const vertex& centroid,
 
 // Fill w[0 to d+1] with q's barycentric coords w.r.t. s (i.e., w.r.t. h).
 // Return true iff w[] is all nonnegative (i.e., q is in s.)
+// If fRaySimplex, h must be in hiRay[], else hi[].
 // If fRaySimplex, return true iff all w[!=d] are nonnegative.
 bool computeBary(const simplexHint& h, const vertex& q, double* w, bool fRaySimplex)
 {
