@@ -49,7 +49,7 @@ template <typename T> void resize(T& vec, int dim, int n) {
 void dump_simplex(const char* prefix, const d_simplex&);
 
 template <class T> void dump_v(const char* prefix, const T& v) {
-  cout << prefix << std::setprecision(6);
+  cout << prefix << std::setprecision(7);
   for (auto i: v) cout << i << " ";
   cout << "\n";
 }
