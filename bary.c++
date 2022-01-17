@@ -3,13 +3,16 @@
 #include <cstdio>
 
 #include "bary.h"
+#undef TESTING
 
 static auto d = -1;
 
-// Solve Ax=b, where A is d*d.  Returns false iff A is singular.
-// Crout's algorithm replaces A with its LU decomposition.
-// Then back-substitution solves for x, which is stored in b.
-bool solveMatrix(void* A, vertex& b)
+// Solve Ax=b, where A is d*d.
+// Return false iff A is singular.
+// Make a local copy of A.
+// Crout's algorithm replaces that with its LU decomposition.
+// Back-substitution solves for x, which is stored in b.
+bool solveMatrix(const void* A, vertex& b)
 {
   using dd = double[d][d];
   dd* src = (dd*)A;
@@ -177,21 +180,24 @@ simplexHint precomputeBary(const d_simplex& s, const vertex& centroid,
     // Compute the inward-pointing unit-length normal to the facet.
 
     /*
-    Given points v0, v1, ..., vn-1 in R^n,
+    Given points v0, v1, ..., vn-1 (rgvFacet) in R^n,
       defining a facet of a (nondegenerate) n-simplex,
-    Find a vector w normal to the hyperplane they span.
+    find a vector w normal to the hyperplane that they span.
      
     Solution:
      
-    Translate the plane so v0 = 0.  That won't change the normal.
-    (Computationally: subtract v0 from each of v1, ..., vn-1; then v0 := zero.)
+    Translate the hyperplane so v0 = 0.  That doesn't change the normal.
+    (Computationally: subtract v0 from each of v1, ..., vn-1; then v0 := zero.
+    Each row of A[d][d] is rgvFacet[i]-rgvFacet[0].)
+      (Were it all zeros, A would be singular.)
      
     This reduces the problem to:
     find w simultaneously orthogonal to v1, ..., vn-1.
      
     i.e., w dot vi = 0, for i from 1 to n-1.
     n-1 equations in n unknowns.
-    The other equation is simply something which {0} doesn't satisfy.  e.g. sum of w_i = 1.
+    The other equation is simply something which {0} doesn't satisfy.
+    Here, we arbitrarily choose "sum of w_i = 1."
      
     Normalize it to unit length.
     To orient it inwards:
@@ -202,8 +208,8 @@ simplexHint precomputeBary(const d_simplex& s, const vertex& centroid,
 
     int i, j;
 
-    // Compute the array of vertices of the facet, not of the simplex.
-    // By skipping the ifacet'th vertex, since that is the one opposite the facet.
+    // Compute the array of vertices of the facet by skipping
+    // the ifacet'th vertex, the vertex opposite the facet.
     const vertex* rgvFacet[d];
 #ifdef TESTING
     int schmoo[d];
@@ -233,27 +239,41 @@ simplexHint precomputeBary(const d_simplex& s, const vertex& centroid,
 #endif
 
     vertex& vNormal = h.facetnormal[ifacet];
-    // Already zeroed.  // std::fill(vNormal.begin()+1, vNormal.end(), 0.0);
+    // vN = [1,0,...] and A's top row = [1,...] is the arbitrary equation
+    // that vN's weights sum to unity.
+    // If that happens to make A singular, we'll tweak A.
     vNormal[0] = 1.0;
-
     double a[d][d];
     for (j=0; j<d; ++j)
-      a[0][j] = 1.;
+      a[0][j] = 1.0;
     for (i=1; i<d; ++i)
       for (j=0; j<d; ++j)
-	{
 	a[i][j] = (*rgvFacet[i])[j] - (*rgvFacet[0])[j];
+
+    if (d==2) {
+      // Direct calculation.  (x,y) is v1-v0.
+      // Agrees with solveMatrix().
+      const auto x = (*rgvFacet[1])[0] - (*rgvFacet[0])[0];
+      const auto y = (*rgvFacet[1])[1] - (*rgvFacet[0])[1];
+      vNormal[0] = -y;
+      vNormal[1] = x;
+    } else {
+      if (!solveMatrix(&a, vNormal)) {
+	// Retry, with A tweaked to be nonsingular.  It *might* still
+	// be singular, but let's wait and see if we need to be fussy.
+	a[0][0] *= -1.0;
+	std::fill(vNormal.begin()+1, vNormal.end(), 0.0);
+	vNormal[0] = 1.0;
+	if (!solveMatrix(&a, vNormal)) {
+	  printf("precomputeBary(): matrix still singular.\n");
+	  // for (i=0; i<d; ++i) { for (j=0; j<d; ++j) printf("%.1f\t", a[i][j]); printf("\n"); } printf("\n");
+	  dump_simplex("possibly degenerate simplex:", s); // Degenerate faces?
+	  return h;
 	}
-
-    if (!solveMatrix(&a, vNormal))
-      {
-      printf("Internal error in precomputeBary().\n");
-      // Matrix a was probably singular.  Because s had degenerate faces.
-      dump_simplex("possibly degenerate simplex:", s);
-      return h;
       }
+    }
 
-    // Normalize vNormal to unit length (unfortunate pun).
+    // Scale vNormal to unit length.
     {
       auto t = 0.0;
       for (auto x: vNormal) t += sq(x);
