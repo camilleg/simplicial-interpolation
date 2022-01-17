@@ -112,10 +112,14 @@ void display() {
       const auto iVertex = sFound[i];
       const auto& v = iVertex < 0 ? qC : qi[iVertex];
       const auto r0 = 0.07 * scale;
+      const bool negative = wFound[i] < 0.0;
       const auto r  = 0.07 * scale * sqrt(fabs(wFound[i]));
       glPushMatrix();
       glTranslatef(v[0], v[1], 0);
-      glColor3f(0.5,0.5,0.5);
+      if (negative)
+	glColor3f(0.1,0.7,0.1);
+      else
+	glColor3f(0.5,0.5,0.5);
       glScalef(r, r, 0);
       // This isn't worth precomputing or moving to a display list.
       glBegin(GL_POLYGON);
