@@ -182,7 +182,9 @@ bool init(int d, int e, int cPoint, qi_kind kind) {
   }
   sort_output(si, false);
   sort_output(siRay, true);
+#undef DUMP_SIMPLICES
 #ifdef DUMP_SIMPLICES
+  printf("Simplices:\n");
   for (auto s: si) {
     for (auto i: s) printf("%2d ", i);
     printf("\n");
@@ -191,6 +193,13 @@ bool init(int d, int e, int cPoint, qi_kind kind) {
     for (auto i: s) printf("%2d ", i);
     printf("\n");
   }
+  printf("Vertices:\n  ");
+  for (int i=0; i<cPoint; ++i) {
+    for (int j=0; j<d; ++j)
+      printf("%.0f\t", qi[i][j]);
+    printf("\n  ");
+  }
+  printf("\n");
 #endif
 
   // printf("read %lu true simplices, %lu ray-simplices.\n", si.size(), siRay.size());
@@ -228,7 +237,7 @@ bool init(int d, int e, int cPoint, qi_kind kind) {
     // Accumulate into vC the centroid of s.  Pass that to precomputeBary().
     vertex vC(d);
     for (auto j=0; j<d; ++j) {
-      for (auto i: s) vC[j] += qi[i][j]; // k<0 is possible only for siRay, not for si.
+      for (auto i: s) vC[j] += qi[i][j]; // i<0 is possible only for siRay, not for si.
       vC[j] /= d + 1.0;
     }
     const auto h = precomputeBary(s, vC, qi, &qC, false);
@@ -241,7 +250,7 @@ bool init(int d, int e, int cPoint, qi_kind kind) {
 
   hiRay.clear();
   for (const auto& s: siRay) {
-    // Accumulate into vC the centroid of s.  Pass that to precomputeBary().
+    // Accumulate into vC the centroid of s's "non-ray" simplex.  Pass that to precomputeBary().
     vertex vC(d);
     for (auto j=0; j<d; ++j) {
       for (auto i: s) vC[j] += (i < 0 ? qC : qi[i])[j];
@@ -249,7 +258,7 @@ bool init(int d, int e, int cPoint, qi_kind kind) {
     }
     const auto h = precomputeBary(s, vC, qi, &qC, true);
     if (!h.s) {
-      printf("error: ray-simplex precomputeBary failed.\n");
+      printf("error: precomputeBary failed for ray-simplex.\n");
       return false;
     }
     hiRay.push_back(h);
@@ -310,7 +319,8 @@ Lfailover:
       return *h.s;
   // This should be impossible, because the ray-simplices partition R^d.
   // Arbitrarily return the first ray-simplex.
-  printf("\tinternal error in findSimplex\n");
+  printf("\tinternal error in findSimplex: no raysimplex holds q.\n");
+  dump_v("\tq = ", q);
   const auto& h = hiRay[0];
   (void)computeBary(h, q, w, true); // It returned false a moment ago.
   return *h.s;
