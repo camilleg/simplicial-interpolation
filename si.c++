@@ -215,22 +215,18 @@ bool init(int d, int e, int cPoint, qi_kind kind) {
 
   // Precompute some things to speed up eval().
 
-  // Calculate qC, the centroid of the bounding box of all simplices.
+  // Calculate qC, the centroid of the qi.
+  // Not the centroid of the bounding box of all simplices, because that
+  // might lie on the hull, producing a degenerate (half-plane) ray-simplex
+  // (e.g., d=2 and cPoint=3, as an axis-aligned right triangle).
+  // This also avoids unusually small or large ray-simplices.
   qC.resize(d);
-  for (auto i=0; i<d; ++i)
-    {
-    auto zMin = std::numeric_limits<double>::max();
-    auto zMax = -zMin;
-    for (const auto& v: qi)
-      {
-      const double z = v[i];
-      if (z < zMin)
-        zMin = z;
-      if (z > zMax)
-        zMax = z;
-      }
-    qC[i] = (zMin + zMax) * .5;
-    }
+  for (int j=0; j<d; ++j) {
+    qC[j] = 0.0;
+    for (int i=0; i<cPoint; ++i)
+      qC[j] += qi[i][j];
+    qC[j] /= cPoint;
+  }
 
   hi.clear();
   for (const auto& s: si) {
@@ -311,6 +307,8 @@ Lfailover:
 	}
 	return *h.s;
       }
+    if (failover)
+      printf("\tedahiro should have returned -1, for a ray-simplex.\n");
   }
   // q wasn't in any simplex, so look in the ray-simplices.
   if (pfInside) *pfInside = false;
