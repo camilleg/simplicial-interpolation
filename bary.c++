@@ -432,15 +432,26 @@ bool computeBary(const simplexHint& h, const vertex& q, double* w, bool fRaySimp
 
   {
     // Normalize w[i]'s so they sum to 1.
-    double t = 0.;
-    for (i=0; i<d+1; ++i)
-      t += w[i];
-    for (i=0; i<d+1; ++i)
-      {
-      w[i] /= t;
-      if (w[i] < 0. && (!fRaySimplex || i!=d))
-	fPositive = false;
+    auto sum = 0.0;
+    for (i=0; i<d+1; ++i) sum += w[i];
+    if (fabs(sum) < 1e-6) {
+      // Typically for q with coords -1e20.  Fall back to "1/n" values, to avoid DBZ.
+      printf("\tInternal workaround for zero-sum weights.\n");
+      for (i=0; i<d+1; ++i)
+	w[i] = copysign(1.0, w[i]);
+      sum = 0.0;
+      for (i=0; i<d+1; ++i) sum += w[i];
+      if (fabs(sum) < 1e-6) {
+	// Harsher fallback, to ensure nonzero sum.
+	for (i=0; i<d+1; ++i) w[i] = 1.0;
+	sum = d+1;
       }
+    }
+    for (i=0; i<d+1; ++i) {
+      w[i] /= sum;
+      if (w[i] < 0.0 && (!fRaySimplex || i != d))
+	fPositive = false;
+    }
   }
 
   if (fRaySimplex && fPositive && w[d] >= 0.)
