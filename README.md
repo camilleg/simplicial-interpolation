@@ -18,7 +18,7 @@ and whose license is similar to the MIT License.
 
 ### How to build and self-test
 
-On Windows 10, install [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10), using the [Ubuntu 20](https://www.microsoft.com/store/apps/9n6svws3rx71) or [Ubuntu 22](https://apps.microsoft.com/store/detail/ubuntu-2204-lts/9PN20MSR04DW?hl=en-us&gl=US) distro.
+On Windows 10 or 11, install [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10), using the [Ubuntu 20](https://www.microsoft.com/store/apps/9n6svws3rx71) or [Ubuntu 22](https://apps.microsoft.com/store/detail/ubuntu-2204-lts/9PN20MSR04DW?hl=en-us&gl=US) distro.
 
 On Linux, Windows, or macOS 10.3+ (2003+), `make test`
 
