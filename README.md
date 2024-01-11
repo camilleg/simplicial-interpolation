@@ -12,7 +12,7 @@ It implements simplicial interpolation, as described in
 [Interpolated Mappings for Musical Instruments](http://camille-g.com/os02.pdf),  
 published in [Organised Sound 7(2):85‒96](http://doi.org/10.1017/S1355771802002029), © Cambridge U. Press.
 
-This software is licensed under the [MIT License](https://mit-license.org/), © 2022 Camille Goudeseune,  
+This software is licensed under the [MIT License](https://mit-license.org/), © 2024 Camille Goudeseune,  
 except for code from Ken Clarkson's [hull.shar](http://www.netlib.org/voronoi/), which is © 1995 AT&T
 and whose license is similar to the MIT License.
 
@@ -20,14 +20,14 @@ and whose license is similar to the MIT License.
 
 On Windows 10 or 11, install [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10), using the [Ubuntu 20](https://www.microsoft.com/store/apps/9n6svws3rx71) or [Ubuntu 22](https://apps.microsoft.com/store/detail/ubuntu-2204-lts/9PN20MSR04DW?hl=en-us&gl=US) distro.
 
-On Linux, Windows, or macOS 10.3+ (2003+), `make test`
+On Linux, Windows, or macOS 10.3+ (2003+), `make test`.
 
 ### How to run the demo
 
 On Linux or Windows, `sudo apt install freeglut3-dev g++ libgl-dev libgl1-mesa-dev make`.  
 On Mac, `brew install freeglut`.
 
--   On Windows, install an X server such as [VcXsrv](https://sourceforge.net/projects/vcxsrv/).  
+-   On Windows, install and run an X server such as [GWSL](https://opticos.github.io/gwsl/) or [VcXsrv](https://sourceforge.net/projects/vcxsrv/).  
 -   `make demo`, or, to specify the high dimension *e* (say, 20) and the number of points (say, 100), `./glut 20 100`  
 -   Move the mouse around over the window.  If you like, zoom with the scroll wheel.  
 -   To exit, hit q or the escape key.  
