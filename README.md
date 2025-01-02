@@ -12,7 +12,7 @@ It implements simplicial interpolation, as described in
 [Interpolated Mappings for Musical Instruments](http://camille-g.com/os02.pdf),  
 published in [Organised Sound 7(2):85‒96](http://doi.org/10.1017/S1355771802002029), © Cambridge U. Press.
 
-This software is licensed under the [MIT License](https://mit-license.org/), © 2024 Camille Goudeseune,  
+This software is licensed under the [MIT License](https://mit-license.org/), © 2025 Camille Goudeseune,  
 except for code from Ken Clarkson's [hull.shar](http://www.netlib.org/voronoi/), which is © 1995 AT&T
 and whose license is similar to the MIT License.
 
